@@ -19,7 +19,7 @@ export default function Home() {
   const { checkForAchievements } = useAchievements();
   const [logValue, setLogValue] = useState("");
 
-  // Determine today's date (time stripped)
+  // Determine today's date (with time stripped)
   const today = new Date();
   const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -64,7 +64,7 @@ export default function Home() {
     };
   }, [carouselRef.current]);
 
-  // Handler for the wheel event: converts vertical scroll to horizontal scroll in carousel
+  // Handler for the wheel event: converts vertical scroll into horizontal scroll
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (carouselRef.current) {
       e.preventDefault();
@@ -116,8 +116,8 @@ export default function Home() {
   };
 
   return (
-    // Add margin-top so content isn't hidden behind the fixed header
-    <div className="max-w-4xl mx-auto p-6 mt-20 space-y-8 overflow-x-hidden">
+    // Reduced top margin (mt-12 instead of mt-20) to account for fixed header
+    <div className="max-w-4xl mx-auto p-6 mt-12 space-y-8 overflow-x-hidden">
       <style jsx>{`
         /* Hide scrollbar for Webkit browsers */
         .scrollbar-hide::-webkit-scrollbar {
@@ -131,7 +131,7 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        {/* Header for the date carousel with consistent horizontal padding */}
+        {/* Header aligned with carousel; now matching log card's date title styling */}
         <div className="px-6">
           <h3 className="text-xl font-semibold mb-2">Select Date</h3>
         </div>
