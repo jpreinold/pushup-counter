@@ -1,4 +1,3 @@
-// app/components/Header.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -20,7 +19,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md mb-6">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white shadow-md">
       <Link href="/" className="text-xl font-bold text-blue-600">
         Pushup Counter
       </Link>
@@ -47,7 +46,6 @@ export default function Header() {
             >
               🧱 Prestige Roadmap
             </Link>
-            {/* Add more links here as needed */}
           </div>
         )}
       </div>

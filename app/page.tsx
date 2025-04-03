@@ -1,16 +1,17 @@
 // app/page.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGoal } from "./context/GoalContext";
 import { useLogs } from "./context/LogContext";
 import { useAchievements } from "./context/AchievementContext";
-import { FaDumbbell, FaCheckCircle, FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
 
-// Utility: format a date as "April 4"
-const formatDate = (date: Date) =>
-  date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+// Utility to format a date as "April 4"
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+};
 
 export default function Home() {
   const { goal } = useGoal();
@@ -18,11 +19,11 @@ export default function Home() {
   const { checkForAchievements } = useAchievements();
   const [logValue, setLogValue] = useState("");
 
-  // Today's date (time stripped)
+  // Determine today's date (time stripped)
   const today = new Date();
   const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // Generate an array of the past 30 days (including today)
+  // Generate an array of past 30 days (including today)
   const daysRange = 30;
   const datesArray = [];
   for (let i = daysRange - 1; i >= 0; i--) {
@@ -36,20 +37,49 @@ export default function Home() {
 
   // Reference for the date carousel container
   const carouselRef = useRef<HTMLDivElement>(null);
+  // Reference for the "today" chip
+  const todayChipRef = useRef<HTMLButtonElement>(null);
+  const [todayVisible, setTodayVisible] = useState(true);
 
-  // Handler to scroll the carousel when arrow buttons are clicked
-  const scrollCarousel = (direction: "left" | "right") => {
+  // Use IntersectionObserver to track visibility of today's chip
+  useEffect(() => {
+    if (!carouselRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target === todayChipRef.current) {
+            setTodayVisible(entry.isIntersecting);
+          }
+        });
+      },
+      { root: carouselRef.current, threshold: 0.5 }
+    );
+    if (todayChipRef.current) {
+      observer.observe(todayChipRef.current);
+    }
+    return () => {
+      if (todayChipRef.current) {
+        observer.unobserve(todayChipRef.current);
+      }
+    };
+  }, [carouselRef.current]);
+
+  // Handler for the wheel event: converts vertical scroll to horizontal scroll in carousel
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (carouselRef.current) {
-      const scrollAmount = 100; // pixels to scroll per click
-      carouselRef.current.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
+      e.preventDefault();
+      carouselRef.current.scrollBy({ left: e.deltaY, behavior: "smooth" });
     }
   };
 
-  // Handler for the Today button: reset selected date and auto-scroll to the rightmost (today)
-  const handleToday = () => {
+  // Handler for the Today button: resets selected date and autoscrolls so today's chip is visible
+  const goToToday = () => {
     setSelectedDate(todayDate);
     if (carouselRef.current) {
-      carouselRef.current.scrollTo({ left: carouselRef.current.scrollWidth, behavior: "smooth" });
+      carouselRef.current.scrollTo({
+        left: carouselRef.current.scrollWidth,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -67,12 +97,12 @@ export default function Home() {
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
 
-  // For the selected day
+  // Stats for the selected day
   const totalSelected = getTotalForDay(selectedDate);
   const pushupsLeft = Math.max(goal - totalSelected, 0);
   const progress = goal > 0 ? totalSelected / goal : 0;
 
-  // Handler for logging pushups using the selected day's date
+  // Handler for logging pushups
   const handleLog = (e: React.FormEvent) => {
     e.preventDefault();
     const count = parseInt(logValue);
@@ -86,37 +116,54 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    // Add margin-top so content isn't hidden behind the fixed header
+    <div className="max-w-4xl mx-auto p-6 mt-20 space-y-8 overflow-x-hidden">
+      <style jsx>{`
+        /* Hide scrollbar for Webkit browsers */
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        /* Hide scrollbar for Firefox */
+        .scrollbar-hide {
+          scrollbar-width: none;
+        }
+      `}</style>
+
       {/* Date Carousel Section */}
       <div>
-        {/* Header aligned with the log card */}
-        <h2 className="text-2xl font-bold mb-4 ml-6">Select Date</h2>
-        <div className="relative">
-          {/* Fade overlays on left and right edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-10 pointer-events-none bg-gradient-to-r from-white to-transparent"></div>
-          <div className="absolute right-0 top-0 bottom-0 w-10 pointer-events-none bg-gradient-to-l from-white to-transparent"></div>
-
-          {/* Left arrow button placed outside the carousel */}
-          <button
-            onClick={() => scrollCarousel("left")}
-            className="absolute left-[-50px] top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow hover:shadow-lg transition"
+        {/* Header for the date carousel with consistent horizontal padding */}
+        <div className="px-6">
+          <h3 className="text-xl font-semibold mb-2">Select Date</h3>
+        </div>
+        <div
+          className="relative py-8"
+          style={{ paddingTop: "calc(2rem + 1px)", paddingBottom: "calc(2rem + 1px)" }}
+        >
+          {/* Carousel container with onWheel event */}
+          <div
+            ref={carouselRef}
+            onWheel={handleWheel}
+            style={{ overflowX: "auto", overflowY: "visible" }}
+            className="flex space-x-4 scrollbar-hide px-6"
           >
-            <FaArrowLeft />
-          </button>
-
-          {/* Date carousel container with extra vertical padding */}
-          <div ref={carouselRef} className="flex space-x-4 overflow-x-auto scrollbar-hide py-4 px-12">
             {datesArray.map((date, idx) => {
               const isSelected = date.getTime() === selectedDate.getTime();
               return (
                 <button
                   key={idx}
+                  ref={date.getTime() === todayDate.getTime() ? todayChipRef : null}
                   onClick={() => setSelectedDate(date)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full border transition transform hover:scale-105 ${
-                    isSelected
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : "bg-gray-100 text-gray-700 border-gray-300"
-                  }`}
+                  className={`
+                    flex-shrink-0 
+                    px-4 py-2 
+                    rounded-full 
+                    border 
+                    origin-center 
+                    transition 
+                    transform 
+                    hover:scale-102 
+                    ${isSelected ? "bg-blue-500 text-white border-blue-500" : "bg-gray-100 text-gray-700 border-gray-300"}
+                  `}
                 >
                   {formatDate(date)}
                 </button>
@@ -124,21 +171,23 @@ export default function Home() {
             })}
           </div>
 
-          {/* Right arrow button placed outside the carousel */}
-          <button
-            onClick={() => scrollCarousel("right")}
-            className="absolute right-[-50px] top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow hover:shadow-lg transition"
-          >
-            <FaArrowRight />
-          </button>
+          {/* Fade overlays */}
+          <div
+            className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10"
+            style={{ background: "linear-gradient(to right, white, transparent)" }}
+          ></div>
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10"
+            style={{ background: "linear-gradient(to left, white, transparent)" }}
+          ></div>
 
-          {/* Today button (blue arrow) when selected date isn't today */}
-          {selectedDate.getTime() !== todayDate.getTime() && (
+          {/* Today button: appears if today's chip isn't visible */}
+          {!todayVisible && (
             <button
-              onClick={handleToday}
-              className="absolute right-[-100px] top-1/2 transform -translate-y-1/2 bg-blue-500 p-3 rounded-full shadow hover:shadow-lg transition text-white"
+              onClick={goToToday}
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-blue-500 text-white p-3 rounded-full shadow hover:shadow-lg transition z-20 text-xl"
             >
-              <FaArrowRight />
+              <FaArrowAltCircleRight />
             </button>
           )}
         </div>
@@ -154,7 +203,9 @@ export default function Home() {
         {pushupsLeft === 0 && totalSelected > 0 && (
           <div className="mt-4 p-4 bg-green-100 border border-green-400 rounded flex items-center">
             <FaCheckCircle className="text-green-600 mr-2" />
-            <span className="text-green-800 font-semibold">Great job! You reached your daily goal!</span>
+            <span className="text-green-800 font-semibold">
+              Great job! You reached your daily goal!
+            </span>
           </div>
         )}
         <form onSubmit={handleLog} className="flex space-x-2">
@@ -165,7 +216,10 @@ export default function Home() {
             placeholder="Enter pushups done"
             className="flex-1 p-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           />
-          <button type="submit" className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition">
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
+          >
             Log
           </button>
         </form>
