@@ -216,22 +216,22 @@ export default function Home() {
             </span>
           </div>
         )}
-        <form onSubmit={handleLog} className="flex space-x-2">
+        <form onSubmit={handleLog} className="flex space-x-0 mt-6 mb-6 shadow-sm rounded-lg overflow-hidden border border-gray-200">
           <input
             type="number"
             value={logValue}
             onChange={(e) => setLogValue(e.target.value)}
             placeholder="Enter pushups done"
-            className="flex-1 p-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            className="flex-1 p-3 focus:outline-none focus:ring-1 focus:ring-blue-400 transition"
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
+            className="bg-blue-500 text-white px-6 py-3 font-medium hover:bg-blue-600 transition"
           >
             Log
           </button>
         </form>
-        <div className="border-t pt-4">
+        <div className="border-t pt-6">
           <h4 className="text-lg font-semibold mb-2">Today's Logs</h4>
           <div className="max-h-48 overflow-y-auto">
             <ul className="space-y-2">
