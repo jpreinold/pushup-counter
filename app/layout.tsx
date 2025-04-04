@@ -7,7 +7,7 @@ import { PrestigeProvider } from "./context/PrestigeContext";
 import Header from "./components/Header";
 
 export const metadata = {
-  title: "Pushup Counter",
+  title: "Pushup Pal",
   description: "Track your daily pushups and see your stats!",
 };
 

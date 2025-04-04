@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGoal } from "./context/GoalContext";
 import { useLogs } from "./context/LogContext";
 import { useAchievements } from "./context/AchievementContext";
-import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt, FaTrash } from "react-icons/fa";
+import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt, FaTrash, FaEdit } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
 import CalendarModal from "./components/CalendarModal";
 
@@ -20,10 +20,13 @@ const formatTime = (timestamp: string) => {
 };
 
 export default function Home() {
-  const { goal } = useGoal();
+  const { goal, setGoal, getGoalForDate } = useGoal();
   const { logs, addLog, clearLogs, deleteLog } = useLogs();
   const { checkForAchievements } = useAchievements();
   const [logValue, setLogValue] = useState("");
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [tempGoal, setTempGoal] = useState("");
+  const goalInputRef = useRef<HTMLInputElement>(null);
 
   // Determine today's date (with time stripped)
   const today = new Date();
@@ -116,10 +119,18 @@ export default function Home() {
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
 
+  // Get the goal for the selected date
+  const dateSpecificGoal = getGoalForDate(selectedDate);
+
   // Stats for the selected day
   const totalSelected = getTotalForDay(selectedDate);
-  const pushupsLeft = Math.max(goal - totalSelected, 0);
-  const progress = goal > 0 ? totalSelected / goal : 0;
+  const pushupsLeft = Math.max(dateSpecificGoal - totalSelected, 0);
+  const progress = dateSpecificGoal > 0 ? totalSelected / dateSpecificGoal : 0;
+
+  // Update tempGoal when selectedDate or dateSpecificGoal changes
+  useEffect(() => {
+    setTempGoal(dateSpecificGoal.toString());
+  }, [selectedDate, dateSpecificGoal]);
 
   // Handler for logging pushups
   const handleSubmit = (e: React.FormEvent) => {
@@ -141,6 +152,42 @@ export default function Home() {
     
     addLog(parseInt(logValue), logDate, checkForAchievements);
     setLogValue("");
+  };
+
+  // Handler for updating the goal
+  const handleGoalUpdate = () => {
+    const newGoal = parseInt(tempGoal);
+    if (!isNaN(newGoal) && newGoal >= 0) {
+      setGoal(newGoal, selectedDate);
+    } else {
+      // Reset to the original value if invalid
+      setTempGoal(dateSpecificGoal.toString());
+    }
+    setIsEditingGoal(false);
+  };
+
+  // Handle click outside to save goal
+  useEffect(() => {
+    if (isEditingGoal) {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (goalInputRef.current && !goalInputRef.current.contains(e.target as Node)) {
+          handleGoalUpdate();
+        }
+      };
+      
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isEditingGoal, tempGoal, dateSpecificGoal]);
+  
+  // Handle key press for goal input
+  const handleGoalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGoalUpdate();
+    } else if (e.key === 'Escape') {
+      setIsEditingGoal(false);
+      setTempGoal(dateSpecificGoal.toString());
+    }
   };
 
   return (
@@ -223,7 +270,33 @@ export default function Home() {
 
       {/* Log Card for Selected Date */}
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 className="text-xl font-semibold">{formatDate(selectedDate)}</h3>
+        <div className="flex items-center">
+          <h3 className="text-xl font-semibold flex items-center">
+            {formatDate(selectedDate)}
+            <span className="ml-2">-</span>
+            {isEditingGoal ? (
+              <input
+                ref={goalInputRef}
+                type="number"
+                value={tempGoal}
+                onChange={(e) => setTempGoal(e.target.value)}
+                onKeyDown={handleGoalKeyDown}
+                className="ml-2 w-16 text-blue-500 font-semibold text-xl border-b border-blue-300 focus:outline-none bg-transparent"
+                min="0"
+                autoFocus
+              />
+            ) : (
+              <span 
+                className="ml-2 text-blue-500 font-semibold cursor-pointer" 
+                onClick={() => setIsEditingGoal(true)}
+              >
+                {dateSpecificGoal}
+              </span>
+            )}
+            <span className="ml-1">Pushups</span>
+          </h3>
+        </div>
+        
         <p className="text-gray-600">
           Pushups left for today: <span className="font-bold">{pushupsLeft}</span>
         </p>
