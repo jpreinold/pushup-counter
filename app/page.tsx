@@ -131,7 +131,7 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-1">
           <h2 className="text-xl font-semibold">Select Date</h2>
           <button
             onClick={() => setShowCalendarModal(true)}

@@ -34,7 +34,14 @@ export default function CalendarModal({ onClose, onSelectDate }: CalendarModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center backdrop-blur-sm bg-black/25 pt-30">
+    <div 
+      className="fixed inset-0 z-50 flex justify-center backdrop-blur-sm bg-black/25 pt-20"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white rounded-lg p-4 w-11/12 sm:w-96 shadow-lg h-fit">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Select a Date</h2>
