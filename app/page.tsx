@@ -13,6 +13,12 @@ const formatDate = (date: Date) => {
   return date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
 };
 
+// When displaying the timestamp in your UI
+const formatTime = (timestamp: string) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 export default function Home() {
   const { goal } = useGoal();
   const { logs, addLog, clearLogs, deleteLog } = useLogs();
@@ -118,11 +124,22 @@ export default function Home() {
   // Handler for logging pushups
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const count = parseInt(logValue);
-    if (isNaN(count) || count <= 0) return;
+    if (!logValue || parseInt(logValue) <= 0) return;
+
+    // Use current date and time instead of just the selected date
+    const now = new Date();
     
-    // Add the log (no need for callback now)
-    addLog(count, selectedDate);
+    // If using a selected date, preserve the date but use current time
+    const logDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds()
+    );
+    
+    addLog(parseInt(logValue), logDate, checkForAchievements);
     setLogValue("");
   };
 
@@ -237,19 +254,19 @@ export default function Home() {
         </form>
         <div className="border-t pt-6">
           <h4 className="text-lg font-semibold mb-2">Today's Logs</h4>
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-48 overflow-y-auto px-2">
             <ul className="space-y-2">
               {getLogsForDay(selectedDate).length > 0 ? (
                 getLogsForDay(selectedDate).map((log, i) => (
-                  <li key={i} className="flex items-center text-gray-700">
+                  <li key={i} className="flex items-center text-gray-700 pl-2 pr-4">
                     <FaDumbbell className="mr-2 text-blue-500" />
-                    <span>{log.count} pushups</span>
-                    <span className="ml-auto text-xs text-gray-500">
-                      {new Date(log.timestamp).toLocaleTimeString()}
+                    <span className="flex-grow">{log.count} pushups</span>
+                    <span className="text-xs text-gray-500 mr-3">
+                      {formatTime(log.timestamp)}
                     </span>
                     <button 
                       onClick={() => deleteLog(log.id)} 
-                      className="ml-3 text-red-400 hover:text-red-600 transition-colors"
+                      className="text-red-400 hover:text-red-600 transition-colors"
                       aria-label="Delete log"
                     >
                       <FaTrash size={14} />
@@ -257,7 +274,7 @@ export default function Home() {
                   </li>
                 ))
               ) : (
-                <li className="text-gray-500 text-sm">No logs yet.</li>
+                <li className="text-gray-500 text-sm pl-2">No logs yet.</li>
               )}
             </ul>
           </div>
