@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -35,13 +34,12 @@ export default function Home() {
   // Selected date state (default: today)
   const [selectedDate, setSelectedDate] = useState(todayDate);
 
-  // Reference for the date carousel container
+  // Reference for the date carousel container and for the "today" chip
   const carouselRef = useRef<HTMLDivElement>(null);
-  // Reference for the "today" chip
   const todayChipRef = useRef<HTMLButtonElement>(null);
   const [todayVisible, setTodayVisible] = useState(true);
 
-  // Use IntersectionObserver to track visibility of today's chip
+  // IntersectionObserver to track visibility of today's chip
   useEffect(() => {
     if (!carouselRef.current) return;
     const observer = new IntersectionObserver(
@@ -64,7 +62,7 @@ export default function Home() {
     };
   }, [carouselRef.current]);
 
-  // Handler for the wheel event: converts vertical scroll into horizontal scroll
+  // Handler for the wheel event: converts vertical scroll to horizontal scroll in carousel
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (carouselRef.current) {
       e.preventDefault();
@@ -93,7 +91,6 @@ export default function Home() {
         logDate.getDate() === day.getDate()
       );
     });
-
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
 
@@ -116,8 +113,7 @@ export default function Home() {
   };
 
   return (
-    // Reduced top margin (mt-12 instead of mt-20) to account for fixed header
-    <div className="max-w-4xl mx-auto p-6 mt-12 space-y-8 overflow-x-hidden">
+    <div className="max-w-4xl mx-auto p-6 space-y-4 overflow-x-hidden">
       <style jsx>{`
         /* Hide scrollbar for Webkit browsers */
         .scrollbar-hide::-webkit-scrollbar {
@@ -131,15 +127,15 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        {/* Header aligned with carousel; now matching log card's date title styling */}
+        {/* Title with same style as log card date title */}
         <div className="px-6">
           <h3 className="text-xl font-semibold mb-2">Select Date</h3>
         </div>
         <div
-          className="relative py-8"
-          style={{ paddingTop: "calc(2rem + 1px)", paddingBottom: "calc(2rem + 1px)" }}
+          className="relative py-4"
+          style={{ paddingTop: "calc(1rem)", paddingBottom: "calc(1rem)" }}
         >
-          {/* Carousel container with onWheel event */}
+          {/* Carousel container */}
           <div
             ref={carouselRef}
             onWheel={handleWheel}
