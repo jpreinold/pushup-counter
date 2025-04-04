@@ -95,12 +95,17 @@ export default function Home() {
   // Get logs for a given day
   const getLogsForDay = (day: Date) =>
     logs.filter((log) => {
-      const logDate = new Date(log.timestamp);
-      return (
-        logDate.getFullYear() === day.getFullYear() &&
-        logDate.getMonth() === day.getMonth() &&
-        logDate.getDate() === day.getDate()
-      );
+      try {
+        const logDate = new Date(log.timestamp);
+        return (
+          logDate.getFullYear() === day.getFullYear() &&
+          logDate.getMonth() === day.getMonth() &&
+          logDate.getDate() === day.getDate()
+        );
+      } catch (e) {
+        console.error("Invalid timestamp format:", log.timestamp);
+        return false;
+      }
     });
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
@@ -116,11 +121,9 @@ export default function Home() {
     const count = parseInt(logValue);
     if (isNaN(count) || count <= 0) return;
     
+    // Add the log (no need for callback now)
     addLog(count, selectedDate);
     setLogValue("");
-    
-    // Check for achievements immediately after adding a log
-    checkForAchievements();
   };
 
   return (

@@ -11,7 +11,7 @@ export interface Log {
 
 interface LogContextType {
   logs: Log[];
-  addLog: (count: number, timestamp: Date) => void;
+  addLog: (count: number, date: Date, callback?: () => void) => void;
   clearLogs: () => void;
   deleteLog: (id: string) => void;  // Add this function
 }
@@ -50,13 +50,23 @@ export function LogProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('pushupLogs', JSON.stringify(logs));
   }, [logs]);
 
-  const addLog = (count: number, timestamp: Date) => {
-    const newLog = {
-      id: Date.now().toString(),  // Generate a unique ID
+  const addLog = (count: number, date: Date, callback?: () => void) => {
+    const newLog: Log = {
+      id: Date.now().toString(),
       count,
-      timestamp: timestamp.toISOString(),
+      timestamp: date.toISOString(),
     };
-    setLogs((prevLogs) => [...prevLogs, newLog]);
+    
+    // Update logs state
+    const updatedLogs = [...logs, newLog];
+    setLogs(updatedLogs);
+    localStorage.setItem("pushupLogs", JSON.stringify(updatedLogs));
+    
+    // Call the callback immediately after updating state
+    if (callback) {
+      // Use a small timeout to ensure React has processed the state update
+      setTimeout(callback, 50);
+    }
   };
 
   const clearLogs = () => {
@@ -65,7 +75,8 @@ export function LogProvider({ children }: { children: ReactNode }) {
 
   // Add the deleteLog function
   const deleteLog = (id: string) => {
-    setLogs((prevLogs) => prevLogs.filter(log => log.id !== id));
+    const updatedLogs = logs.filter(log => log.id !== id);
+    setLogs(updatedLogs);
   };
 
   return (

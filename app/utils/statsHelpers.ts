@@ -13,7 +13,7 @@ export const getHourlySessionCounts = (logs: Log[]) => {
 export const getDailySessionCounts = (logs: Log[]) => {
   const counts: { [day: string]: number } = {};
   logs.forEach((log) => {
-    const date = log.timestamp.toISOString().split("T")[0];
+    const date = log.timestamp.split("T")[0];
     counts[date] = (counts[date] || 0) + 1;
   });
   return counts;

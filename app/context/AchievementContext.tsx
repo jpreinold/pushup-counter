@@ -11,9 +11,17 @@ import { useLogs } from "./LogContext";
 import { useToast } from "./ToastContext";
 import { usePrestige } from "./PrestigeContext";
 import { ALL_BADGES, Badge, DerivedStats } from "../data/achievements";
+import confetti from 'canvas-confetti';
 
-const confettiModule = require("canvas-confetti");
-const confetti = confettiModule.default || confettiModule;
+// Add this type declaration if you're still having issues
+type ConfettiOptions = {
+  particleCount?: number;
+  spread?: number;
+  origin?: {
+    x?: number;
+    y?: number;
+  };
+};
 
 type AchievementContextType = {
   unlocked: string[];
@@ -26,31 +34,55 @@ const AchievementContext = createContext<AchievementContextType | undefined>(
 );
 
 export function AchievementProvider({ children }: { children: ReactNode }) {
-  const [unlocked, setUnlocked] = useState<string[]>([]);
-  const [toastedBadges, setToastedBadges] = useState<string[]>([]);
   const { logs } = useLogs();
   const { showToast } = useToast();
   const { prestige } = usePrestige();
+  const [unlocked, setUnlocked] = useState<string[]>([]);
+  const [toastedBadges, setToastedBadges] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
-  // Load unlocked badges
+  // Load unlocked badges from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("unlockedBadges");
-    if (stored) setUnlocked(JSON.parse(stored));
+    const storedToasted = localStorage.getItem("toastedBadges");
     
-    // Load badges we've already shown toasts for
-    const toasted = localStorage.getItem("toastedBadges");
-    if (toasted) setToastedBadges(JSON.parse(toasted));
+    if (stored) {
+      setUnlocked(JSON.parse(stored));
+    }
+    
+    if (storedToasted) {
+      setToastedBadges(JSON.parse(storedToasted));
+    } else if (stored) {
+      // If no toasted record exists but we have unlocked badges,
+      // initialize toastedBadges with all currently unlocked badges
+      const loadedBadges = JSON.parse(stored);
+      setToastedBadges(loadedBadges);
+      localStorage.setItem("toastedBadges", JSON.stringify(loadedBadges));
+    }
+    
+    setInitialized(true);
   }, []);
 
-  // Save unlocked badges
+  // Check for achievements whenever logs change
   useEffect(() => {
-    localStorage.setItem("unlockedBadges", JSON.stringify(unlocked));
-  }, [unlocked]);
-  
-  // Save toasted badges
+    if (initialized) {
+      checkForAchievements();
+    }
+  }, [logs, initialized, prestige]);
+
+  // Save unlocked badges to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem("toastedBadges", JSON.stringify(toastedBadges));
-  }, [toastedBadges]);
+    if (initialized) {
+      localStorage.setItem("unlockedBadges", JSON.stringify(unlocked));
+    }
+  }, [unlocked, initialized]);
+
+  // Save toasted badges to localStorage whenever they change
+  useEffect(() => {
+    if (initialized) {
+      localStorage.setItem("toastedBadges", JSON.stringify(toastedBadges));
+    }
+  }, [toastedBadges, initialized]);
 
   const getStats = (): DerivedStats => {
     const totalPushups = logs.reduce((sum, log) => sum + log.count, 0);
