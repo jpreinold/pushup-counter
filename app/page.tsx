@@ -66,6 +66,13 @@ export default function Home() {
     };
   }, [carouselRef.current]);
 
+  // Add this new useEffect to scroll to today on mount
+  useEffect(() => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollLeft = carouselRef.current.scrollWidth;
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
   // Handler for the wheel event: converts vertical scroll to horizontal scroll in carousel
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (carouselRef.current) {
@@ -131,7 +138,7 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Select Date</h2>
           <button
             onClick={() => setShowCalendarModal(true)}
@@ -142,13 +149,13 @@ export default function Home() {
         </div>
         <div
           className="relative py-4"
-          style={{ paddingTop: "calc(1rem + 1px)", paddingBottom: "calc(1rem + 1px)" }}
+          style={{ paddingTop: "calc(1rem)", paddingBottom: "calc(1rem)" }}
         >
           <div
             ref={carouselRef}
             onWheel={handleWheel}
             style={{ overflowX: "auto", overflowY: "visible" }}
-            className="flex space-x-2 scrollbar-hide px-6"
+            className="flex space-x-2 scrollbar-hide px-6 py-2"
           >
             {datesArray.map((date, idx) => {
               const isSelected = date.getTime() === selectedDate.getTime();

@@ -39,18 +39,21 @@ export default function Header() {
         >
           <Link
             href="/stats"
+            onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             📊 Stats
           </Link>
           <Link
             href="/prestige"
+            onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             🧱 Prestige Roadmap
           </Link>
           <Link
             href="/goals"
+            onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             🎯 Set Goal
