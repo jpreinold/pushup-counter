@@ -1,13 +1,24 @@
 import { useState } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaDumbbell } from "react-icons/fa";
+
+interface PushupData {
+  date: string;
+  count: number;
+}
 
 interface CalendarModalProps {
   onClose: () => void;
   onSelectDate: (date: Date) => void;
+  pushupData?: PushupData[];
 }
 
-export default function CalendarModal({ onClose, onSelectDate }: CalendarModalProps) {
+export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }: CalendarModalProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Debug log
+  console.log("Calendar pushup data:", pushupData);
   
   // Get first day of month and total days
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -26,6 +37,14 @@ export default function CalendarModal({ onClose, onSelectDate }: CalendarModalPr
   for (let i = 1; i <= lastDay.getDate(); i++) {
     days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i));
   }
+
+  // Function to get pushup count for a specific date
+  const getPushupCount = (date: Date): number | null => {
+    if (!date) return null;
+    const dateString = date.toISOString().split('T')[0];
+    const entry = pushupData.find(data => data.date === dateString);
+    return entry ? entry.count : null;
+  };
 
   const changeMonth = (offset: number) => {
     const newDate = new Date(currentDate);
@@ -69,19 +88,33 @@ export default function CalendarModal({ onClose, onSelectDate }: CalendarModalPr
                 {day}
               </div>
             ))}
-            {days.map((date, index) => (
-              <button
-                key={index}
-                onClick={() => date && onSelectDate(date)}
-                className={`
-                  p-2 text-center rounded hover:bg-blue-50
-                  ${!date ? 'invisible' : ''}
-                  ${date?.toDateString() === new Date().toDateString() ? 'bg-blue-100' : ''}
-                `}
-              >
-                {date?.getDate()}
-              </button>
-            ))}
+            {days.map((date, index) => {
+              const pushupCount = date ? getPushupCount(date) : null;
+              const isFutureDate = date && date > today;
+              
+              return (
+                <div key={index} className="relative">
+                  <button
+                    onClick={() => date && !isFutureDate && onSelectDate(date)}
+                    disabled={isFutureDate || false}
+                    className={`
+                      p-2 text-center rounded w-full h-full flex flex-col items-center justify-start
+                      ${!date ? 'invisible' : ''}
+                      ${date?.toDateString() === today.toDateString() ? 'bg-blue-100' : ''}
+                      ${isFutureDate ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-blue-50'}
+                    `}
+                  >
+                    <span className="mb-1">{date?.getDate()}</span>
+                    {date && pushupCount !== null && pushupCount > 0 && (
+                      <div className="flex items-center text-xs text-blue-600">
+                        <FaDumbbell className="mr-1 text-blue-600" size={12} />
+                        <span>{pushupCount}</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

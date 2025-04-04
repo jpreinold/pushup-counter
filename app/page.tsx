@@ -374,6 +374,19 @@ export default function Home() {
               chip?.scrollIntoView({ behavior: "smooth", inline: "center" });
             }, 100);
           }}
+          pushupData={logs.reduce((acc, log) => {
+            const dateString = new Date(log.timestamp).toISOString().split('T')[0];
+            
+            const existingEntry = acc.find(item => item.date === dateString);
+            
+            if (existingEntry) {
+              existingEntry.count += log.count;
+            } else {
+              acc.push({ date: dateString, count: log.count });
+            }
+            
+            return acc;
+          }, [] as Array<{date: string, count: number}>)}
         />
       )}
     </div>
