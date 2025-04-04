@@ -132,6 +132,46 @@ export default function Home() {
     setTempGoal(dateSpecificGoal.toString());
   }, [selectedDate, dateSpecificGoal]);
 
+  // Calculate streak for a given date
+  const calculateStreak = (date: Date): number => {
+    // Clone the date to avoid modifying the original
+    let currentDate = new Date(date);
+    let streak = 0;
+    
+    // Check if there are logs for the current date
+    const hasLogsForCurrentDate = getLogsForDay(currentDate).length > 0;
+    
+    // If no logs for current date, return 0
+    if (!hasLogsForCurrentDate) {
+      return 0;
+    }
+    
+    // Count current date as part of streak
+    streak = 1;
+    
+    // Check previous days
+    let checkDate = new Date(currentDate);
+    while (true) {
+      // Move to previous day
+      checkDate.setDate(checkDate.getDate() - 1);
+      
+      // Check if there are logs for this day
+      const hasLogs = getLogsForDay(checkDate).length > 0;
+      
+      if (hasLogs) {
+        streak++;
+      } else {
+        // Break the loop when we find a day without logs
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  // Get current streak for selected date
+  const currentStreak = calculateStreak(selectedDate);
+
   // Handler for logging pushups
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +229,9 @@ export default function Home() {
       setTempGoal(dateSpecificGoal.toString());
     }
   };
+
+  // Add state for tooltip visibility
+  const [showTooltip, setShowTooltip] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
@@ -269,7 +312,27 @@ export default function Home() {
       </div>
 
       {/* Log Card for Selected Date */}
-      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow p-6 space-y-4 relative">
+        {/* Streak Counter - only show when streak > 1 */}
+        {currentStreak > 1 && (
+          <div 
+            className="absolute top-4 right-4 flex items-center bg-orange-100 px-3 py-1 rounded-full cursor-pointer"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            <span role="img" aria-label="fire" className="mr-1">🔥</span>
+            <span className="font-semibold text-orange-600">{currentStreak}</span>
+            
+            {/* Custom Tooltip */}
+            {showTooltip && (
+              <div className="absolute right-0 top-full mt-2 bg-white text-gray-800 text-sm py-2 px-3 rounded shadow-lg z-50 whitespace-nowrap border border-gray-200">
+                <div className="absolute right-3 -top-2 w-4 h-4 bg-white transform rotate-45 border-l border-t border-gray-200"></div>
+                <span>{currentStreak} day streak! Keep going!</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center">
           <h3 className="text-xl font-semibold flex items-center">
             {formatDate(selectedDate)}
