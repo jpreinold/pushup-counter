@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGoal } from "./context/GoalContext";
 import { useLogs } from "./context/LogContext";
 import { useAchievements } from "./context/AchievementContext";
-import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt } from "react-icons/fa";
+import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt, FaTrash } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
 import CalendarModal from "./components/CalendarModal";
 
@@ -15,7 +15,7 @@ const formatDate = (date: Date) => {
 
 export default function Home() {
   const { goal } = useGoal();
-  const { logs, addLog, clearLogs } = useLogs();
+  const { logs, addLog, clearLogs, deleteLog } = useLogs();
   const { checkForAchievements } = useAchievements();
   const [logValue, setLogValue] = useState("");
 
@@ -111,15 +111,15 @@ export default function Home() {
   const progress = goal > 0 ? totalSelected / goal : 0;
 
   // Handler for logging pushups
-  const handleLog = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const count = parseInt(logValue);
     if (isNaN(count) || count <= 0) return;
-    const now = new Date();
-    const timestamp = new Date(selectedDate);
-    timestamp.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-    addLog(count, timestamp);
+    
+    addLog(count, selectedDate);
     setLogValue("");
+    
+    // Check for achievements immediately after adding a log
     checkForAchievements();
   };
 
@@ -216,17 +216,18 @@ export default function Home() {
             </span>
           </div>
         )}
-        <form onSubmit={handleLog} className="flex space-x-0 mt-6 mb-6 shadow-sm rounded-lg overflow-hidden border border-gray-200">
+        <form onSubmit={handleSubmit} className="flex items-center mt-4">
           <input
             type="number"
             value={logValue}
             onChange={(e) => setLogValue(e.target.value)}
             placeholder="Enter pushups done"
-            className="flex-1 p-3 focus:outline-none focus:ring-1 focus:ring-blue-400 transition"
+            className="border border-gray-300 rounded-l p-2 w-full focus:outline-none focus:border-blue-500 shadow-md"
+            min="1"
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white px-6 py-3 font-medium hover:bg-blue-600 transition"
+            className="bg-blue-500 text-white px-6 py-2 rounded-r border border-blue-500 hover:bg-blue-600 hover:border-blue-600 transition shadow-md"
           >
             Log
           </button>
@@ -243,6 +244,13 @@ export default function Home() {
                     <span className="ml-auto text-xs text-gray-500">
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </span>
+                    <button 
+                      onClick={() => deleteLog(log.id)} 
+                      className="ml-3 text-red-400 hover:text-red-600 transition-colors"
+                      aria-label="Delete log"
+                    >
+                      <FaTrash size={14} />
+                    </button>
                   </li>
                 ))
               ) : (

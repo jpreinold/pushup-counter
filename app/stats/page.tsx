@@ -45,10 +45,10 @@ export default function StatsPage() {
       break;
   }
 
-  const filteredLogs = logs.filter((log) => log.timestamp >= startDate);
+  const filteredLogs = logs.filter((log) => new Date(log.timestamp) >= startDate);
   const grouped: { [key: string]: number } = {};
   filteredLogs.forEach((log) => {
-    const dateKey = log.timestamp.toISOString().split("T")[0];
+    const dateKey = log.timestamp.split("T")[0];
     grouped[dateKey] = (grouped[dateKey] || 0) + log.count;
   });
 
@@ -84,6 +84,7 @@ export default function StatsPage() {
   const handleReset = () => {
     localStorage.removeItem("unlockedBadges");
     localStorage.removeItem("prestigeLevel");
+    localStorage.removeItem("toastedBadges");
     clearLogs();
     window.location.reload();
   };

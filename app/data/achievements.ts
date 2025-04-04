@@ -1,5 +1,5 @@
 // app/data/achievements.ts
-import { Log } from "../context/LogContext";
+import { type Log } from "../context/LogContext";
 import {
     getHourlySessionCounts,
     getDailySessionCounts,
@@ -30,7 +30,7 @@ export type Badge = {
 
 // 📅 Returns a list of sorted unique dates
 export const getSortedUniqueDates = (logs: Log[]): string[] => {
-    const set = new Set(logs.map((log) => log.timestamp.toISOString().split("T")[0]));
+    const set = new Set(logs.map((log) => log.timestamp.split("T")[0]));
     return [...set].sort();
 };
   

@@ -27,28 +27,36 @@ const AchievementContext = createContext<AchievementContextType | undefined>(
 
 export function AchievementProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState<string[]>([]);
+  const [toastedBadges, setToastedBadges] = useState<string[]>([]);
   const { logs } = useLogs();
   const { showToast } = useToast();
   const { prestige } = usePrestige();
 
+  // Load unlocked badges
   useEffect(() => {
     const stored = localStorage.getItem("unlockedBadges");
     if (stored) setUnlocked(JSON.parse(stored));
+    
+    // Load badges we've already shown toasts for
+    const toasted = localStorage.getItem("toastedBadges");
+    if (toasted) setToastedBadges(JSON.parse(toasted));
   }, []);
 
+  // Save unlocked badges
   useEffect(() => {
     localStorage.setItem("unlockedBadges", JSON.stringify(unlocked));
   }, [unlocked]);
-
+  
+  // Save toasted badges
   useEffect(() => {
-    checkForAchievements();
-  }, [logs, prestige]);
+    localStorage.setItem("toastedBadges", JSON.stringify(toastedBadges));
+  }, [toastedBadges]);
 
   const getStats = (): DerivedStats => {
     const totalPushups = logs.reduce((sum, log) => sum + log.count, 0);
     const dayCounts: { [date: string]: number } = {};
     logs.forEach((log) => {
-      const date = log.timestamp.toISOString().split("T")[0];
+      const date = log.timestamp.split("T")[0];
       dayCounts[date] = (dayCounts[date] || 0) + log.count;
     });
 
@@ -65,33 +73,49 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
 
   const checkForAchievements = () => {
     const stats = getStats();
-
-    // ✅ Check ALL badges up to current prestige, plus prestige 10 meta badges
+    let newUnlocked = [...unlocked];
+    let newToasts: string[] = [];
+    
+    // Filter badges by prestige level
     const eligibleBadges = ALL_BADGES.filter(
-      (b) => b.rank <= prestige || b.rank === 10
+      (badge) => badge.rank <= prestige
     );
-
-    const newBadges: string[] = [];
-
+    
+    // Check each badge
     eligibleBadges.forEach((badge) => {
-      if (!unlocked.includes(badge.id)) {
-        const earned =
-          badge.condition.length === 2
-            ? badge.condition(logs, stats)
-            : badge.condition(logs, stats, unlocked, ALL_BADGES);
-        if (earned) newBadges.push(badge.id);
+      if (!unlocked.includes(badge.id) && 
+          badge.condition(logs, stats, unlocked, ALL_BADGES)) {
+        newUnlocked.push(badge.id);
+        
+        // Only show toast if we haven't shown it before
+        if (!toastedBadges.includes(badge.id)) {
+          newToasts.push(badge.id);
+        }
       }
     });
-
-    if (newBadges.length > 0) {
-      setUnlocked((prev) => [...prev, ...newBadges]);
-
-      newBadges.forEach((id) => {
-        const badge = ALL_BADGES.find((b) => b.id === id);
-        if (badge) showToast(`🏅 Badge Unlocked: ${badge.name}`);
+    
+    // Update unlocked badges if needed
+    if (newUnlocked.length > unlocked.length) {
+      setUnlocked(newUnlocked);
+    }
+    
+    // Show toasts and update toasted badges
+    if (newToasts.length > 0) {
+      // Trigger confetti for new achievements
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
       });
-
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      
+      newToasts.forEach((badgeId) => {
+        const badge = ALL_BADGES.find((b) => b.id === badgeId);
+        if (badge) {
+          showToast(`🏆 Achievement Unlocked: ${badge.emoji} ${badge.name}`);
+        }
+      });
+      
+      setToastedBadges([...toastedBadges, ...newToasts]);
     }
   };
 
