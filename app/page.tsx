@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { useGoal } from "./context/GoalContext";
 import { useLogs } from "./context/LogContext";
 import { useAchievements } from "./context/AchievementContext";
-import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight } from "react-icons/fa";
+import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
+import CalendarModal from "./components/CalendarModal";
 
 // Utility to format a date as "April 4"
 const formatDate = (date: Date) => {
@@ -24,7 +25,7 @@ export default function Home() {
 
   // Generate an array of past 30 days (including today)
   const daysRange = 30;
-  const datesArray = [];
+  const datesArray: Date[] = [];
   for (let i = daysRange - 1; i >= 0; i--) {
     const d = new Date(todayDate);
     d.setDate(todayDate.getDate() - i);
@@ -33,6 +34,9 @@ export default function Home() {
 
   // Selected date state (default: today)
   const [selectedDate, setSelectedDate] = useState(todayDate);
+
+  // State for showing the calendar modal
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   // Reference for the date carousel container and for the "today" chip
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -127,26 +131,31 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        {/* "Select Date" Title with smaller bottom margin */}
-        <div className="px-6">
-          <h3 className="text-xl font-semibold mb-1">Select Date</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xl font-semibold">Select Date</h2>
+          <button
+            onClick={() => setShowCalendarModal(true)}
+            className="text-blue-500 hover:text-blue-600 transition-colors"
+          >
+            <FaCalendarAlt />
+          </button>
         </div>
         <div
           className="relative py-4"
           style={{ paddingTop: "calc(1rem + 1px)", paddingBottom: "calc(1rem + 1px)" }}
         >
-          {/* Carousel container */}
           <div
             ref={carouselRef}
             onWheel={handleWheel}
             style={{ overflowX: "auto", overflowY: "visible" }}
-            className="flex space-x-4 scrollbar-hide px-6"
+            className="flex space-x-2 scrollbar-hide px-6"
           >
             {datesArray.map((date, idx) => {
               const isSelected = date.getTime() === selectedDate.getTime();
               return (
                 <button
                   key={idx}
+                  id={`chip-${date.getTime()}`}
                   ref={date.getTime() === todayDate.getTime() ? todayChipRef : null}
                   onClick={() => setSelectedDate(date)}
                   className={`
@@ -166,8 +175,6 @@ export default function Home() {
               );
             })}
           </div>
-
-          {/* Fade overlays */}
           <div
             className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10"
             style={{ background: "linear-gradient(to right, white, transparent)" }}
@@ -176,8 +183,6 @@ export default function Home() {
             className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10"
             style={{ background: "linear-gradient(to left, white, transparent)" }}
           ></div>
-
-          {/* Today button: appears if today's chip isn't visible */}
           {!todayVisible && (
             <button
               onClick={goToToday}
@@ -248,6 +253,21 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Calendar Modal */}
+      {showCalendarModal && (
+        <CalendarModal
+          onClose={() => setShowCalendarModal(false)}
+          onSelectDate={(date: Date) => {
+            setSelectedDate(date);
+            setShowCalendarModal(false);
+            setTimeout(() => {
+              const chip = document.getElementById(`chip-${date.getTime()}`);
+              chip?.scrollIntoView({ behavior: "smooth", inline: "center" });
+            }, 100);
+          }}
+        />
+      )}
     </div>
   );
 }
