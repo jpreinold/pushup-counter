@@ -113,7 +113,7 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-4 overflow-x-hidden">
+    <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
       <style jsx>{`
         /* Hide scrollbar for Webkit browsers */
         .scrollbar-hide::-webkit-scrollbar {
