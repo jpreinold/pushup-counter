@@ -113,7 +113,7 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-4 overflow-x-hidden">
+    <div className="max-w-4xl mx-auto mt-12 space-y-4 overflow-x-hidden">
       <style jsx>{`
         /* Hide scrollbar for Webkit browsers */
         .scrollbar-hide::-webkit-scrollbar {
@@ -127,13 +127,13 @@ export default function Home() {
 
       {/* Date Carousel Section */}
       <div>
-        {/* Title with same style as log card date title */}
+        {/* "Select Date" Title with smaller bottom margin */}
         <div className="px-6">
-          <h3 className="text-xl font-semibold mb-2">Select Date</h3>
+          <h3 className="text-xl font-semibold mb-1">Select Date</h3>
         </div>
         <div
           className="relative py-4"
-          style={{ paddingTop: "calc(1rem)", paddingBottom: "calc(1rem)" }}
+          style={{ paddingTop: "calc(1rem + 1px)", paddingBottom: "calc(1rem + 1px)" }}
         >
           {/* Carousel container */}
           <div
