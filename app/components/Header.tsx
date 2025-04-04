@@ -32,22 +32,30 @@ export default function Header() {
           <FiSettings />
         </button>
 
-        {open && (
-          <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow z-50">
-            <Link
-              href="/stats"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              📊 Stats
-            </Link>
-            <Link
-              href="/prestige"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              🧱 Prestige Roadmap
-            </Link>
-          </div>
-        )}
+        <div
+          className={`absolute right-0 mt-2 w-48 bg-white border rounded shadow z-50 transform transition-all duration-300 ease-out ${
+            open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+          }`}
+        >
+          <Link
+            href="/stats"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            📊 Stats
+          </Link>
+          <Link
+            href="/prestige"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            🧱 Prestige Roadmap
+          </Link>
+          <Link
+            href="/goals"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            🎯 Set Goal
+          </Link>
+        </div>
       </div>
     </header>
   );
