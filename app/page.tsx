@@ -375,6 +375,8 @@ export default function Home() {
         <form onSubmit={handleSubmit} className="flex items-center mt-4">
           <input
             type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={logValue}
             onChange={(e) => setLogValue(e.target.value)}
             placeholder="Enter pushups done"
