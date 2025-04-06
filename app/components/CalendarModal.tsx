@@ -39,11 +39,22 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
   }
 
   // Function to get pushup count for a specific date
-  const getPushupCount = (date: Date): number | null => {
-    if (!date) return null;
-    const dateString = date.toISOString().split('T')[0];
+  const getPushupCount = (date: Date): number => {
+    if (!date) return 0;
+    
+    // Create a date string in YYYY-MM-DD format for the calendar date
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    // Find matching entry in pushup data
     const entry = pushupData.find(data => data.date === dateString);
-    return entry ? entry.count : null;
+    
+    // Debug
+    console.log(`Checking date: ${dateString}, Found: ${entry ? entry.count : 0}`);
+    
+    return entry ? entry.count : 0;
   };
 
   const changeMonth = (offset: number) => {
@@ -89,14 +100,18 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
               </div>
             ))}
             {days.map((date, index) => {
-              const pushupCount = date ? getPushupCount(date) : null;
-              const isFutureDate = date && date > today;
+              // Ensure we're comparing dates properly by setting hours to 0
+              const dateToCompare = date ? new Date(date.getFullYear(), date.getMonth(), date.getDate()) : null;
+              const isFutureDate = dateToCompare ? dateToCompare > today : false;
+              
+              // Only get pushup count if it's not a future date
+              const pushupCount = (date && !isFutureDate) ? getPushupCount(date) : 0;
               
               return (
                 <div key={index} className="relative">
                   <button
                     onClick={() => date && !isFutureDate && onSelectDate(date)}
-                    disabled={isFutureDate || false}
+                    disabled={isFutureDate}
                     className={`
                       p-2 text-center rounded w-full h-full flex flex-col items-center justify-start
                       ${!date ? 'invisible' : ''}
@@ -105,7 +120,7 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
                     `}
                   >
                     <span className="mb-1">{date?.getDate()}</span>
-                    {date && pushupCount !== null && pushupCount > 0 && (
+                    {date && !isFutureDate && pushupCount > 0 && (
                       <div className="flex items-center text-xs text-blue-600">
                         <FaDumbbell className="mr-1 text-blue-600" size={12} />
                         <span>{pushupCount}</span>

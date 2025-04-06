@@ -441,9 +441,16 @@ export default function Home() {
           }}
           pushupData={logs.reduce((acc, log) => {
             try {
+              // Create a date object from the log timestamp
               const logDate = new Date(log.timestamp);
-              const dateString = logDate.toISOString().split('T')[0];
               
+              // Format the date as YYYY-MM-DD, using local timezone
+              const year = logDate.getFullYear();
+              const month = String(logDate.getMonth() + 1).padStart(2, '0');
+              const day = String(logDate.getDate()).padStart(2, '0');
+              const dateString = `${year}-${month}-${day}`;
+              
+              // Find or create entry
               const existingEntry = acc.find(item => item.date === dateString);
               
               if (existingEntry) {
