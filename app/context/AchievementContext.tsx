@@ -243,9 +243,6 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Remove event listener approach - we'll rely on React's useEffect instead
-  // to prevent duplicate validations
-
   // Check for achievements when logs/goal/prestige change directly
   // Use a useEffect with a cleanup function
   useEffect(() => {
@@ -257,10 +254,22 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
       }
     }, 50);
     
+    // Add event listener for logsChanged event
+    const handleLogsChanged = () => {
+      if (!isProcessing.current) {
+        checkForAchievements();
+        validateAchievements();
+      }
+    };
+    
+    window.addEventListener('logsChanged', handleLogsChanged);
+    
+    // Clean up event listener on unmount
     return () => {
       clearTimeout(timer);
+      window.removeEventListener('logsChanged', handleLogsChanged);
     };
-  }, [logs, goal, prestige]);
+  }, [logs, goal, prestige, checkForAchievements, validateAchievements]);
 
   return (
     <AchievementContext.Provider

@@ -1,12 +1,19 @@
 // app/prestige/page.tsx
 "use client";
 
+import { useEffect } from "react";
 import { useAchievements } from "../context/AchievementContext";
 import { usePrestige } from "../context/PrestigeContext";
 
 export default function PrestigeRoadmap() {
-  const { unlocked, allBadges } = useAchievements();
+  const { unlocked, allBadges, validateAchievements, checkForAchievements } = useAchievements();
   const { prestige } = usePrestige();
+
+  // Validate achievements when the page loads
+  useEffect(() => {
+    validateAchievements();
+    checkForAchievements();
+  }, [validateAchievements, checkForAchievements]);
 
   // Group all badges by prestige rank
   const groupedByRank: { [rank: number]: typeof allBadges } = {};

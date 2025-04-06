@@ -35,12 +35,12 @@ export function LogProvider({ children }: { children: ReactNode }) {
     return [];
   });
 
-  // Save logs to localStorage whenever they change
+  // Save logs to localStorage and dispatch event when logs change
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("pushupLogs", JSON.stringify(logs));
       
-      // We'll trigger a custom event that AchievementContext can listen for
+      // Dispatch a custom event that AchievementContext can listen for
       const event = new CustomEvent('logsChanged', { detail: { logs } });
       window.dispatchEvent(event);
     }

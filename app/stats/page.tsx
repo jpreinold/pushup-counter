@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLogs } from "../context/LogContext";
 import { useAchievements } from "../context/AchievementContext";
 import { usePrestige } from "../context/PrestigeContext";
@@ -34,9 +34,15 @@ ChartJS.register(
 
 export default function StatsPage() {
   const { logs, clearLogs } = useLogs();
-  const { unlocked, allBadges, validateAchievements } = useAchievements();
+  const { unlocked, allBadges, validateAchievements, checkForAchievements } = useAchievements();
   const { prestige } = usePrestige();
   const [range, setRange] = useState("week");
+
+  // Validate achievements when the page loads
+  useEffect(() => {
+    validateAchievements();
+    checkForAchievements();
+  }, [validateAchievements, checkForAchievements]);
 
   const now = new Date();
   let startDate: Date;
@@ -305,7 +311,10 @@ export default function StatsPage() {
       clearLogs();
       
       // Force validation after clearing logs
-      validateAchievements();
+      setTimeout(() => {
+        validateAchievements();
+        checkForAchievements();
+      }, 100);
       
       // Force reload to update all contexts
       window.location.reload();
