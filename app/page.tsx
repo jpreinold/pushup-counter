@@ -7,13 +7,11 @@ import { useAchievements } from "./context/AchievementContext";
 import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt, FaTrash, FaEdit } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
 import CalendarModal from "./components/CalendarModal";
+import StreakCounter from "./components/StreakCounter";
+import LogsSection from "./components/LogsSection";
+import { formatDate } from "./utils/dateUtils";
 
 // Utility to format a date as "April 4"
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
-};
-
-// When displaying the timestamp in your UI
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -21,7 +19,7 @@ const formatTime = (timestamp: string) => {
 
 export default function Home() {
   const { goal, setGoal, getGoalForDate } = useGoal();
-  const { logs, addLog, clearLogs, deleteLog } = useLogs();
+  const { logs, addLog, clearLogs, deleteLog, deleteDateLogs } = useLogs();
   const { checkForAchievements } = useAchievements();
   const [logValue, setLogValue] = useState("");
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -190,7 +188,12 @@ export default function Home() {
       now.getSeconds()
     );
     
-    addLog(parseInt(logValue), logDate, checkForAchievements);
+    // Call addLog with just the count and timestamp
+    addLog(parseInt(logValue), logDate.toISOString());
+    
+    // Then check for achievements separately
+    checkForAchievements();
+    
     setLogValue("");
   };
 
@@ -232,6 +235,9 @@ export default function Home() {
 
   // Add state for tooltip visibility
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // Add state for confirmation modal
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
@@ -313,25 +319,8 @@ export default function Home() {
 
       {/* Log Card for Selected Date */}
       <div className="bg-white rounded-lg shadow p-6 space-y-4 relative">
-        {/* Streak Counter - only show when streak > 1 */}
-        {currentStreak > 1 && (
-          <div 
-            className="absolute top-4 right-4 flex items-center bg-orange-100 px-3 py-1 rounded-full cursor-pointer"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-          >
-            <span role="img" aria-label="fire" className="mr-1">🔥</span>
-            <span className="font-semibold text-orange-600">{currentStreak}</span>
-            
-            {/* Custom Tooltip */}
-            {showTooltip && (
-              <div className="absolute right-0 top-full mt-2 bg-white text-gray-800 text-sm py-2 px-3 rounded shadow-lg z-50 whitespace-nowrap border border-gray-200">
-                <div className="absolute right-3 -top-2 w-4 h-4 bg-white transform rotate-45 border-l border-t border-gray-200"></div>
-                <span>{currentStreak} day streak! Keep going!</span>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Streak Counter Component */}
+        <StreakCounter streak={currentStreak} />
 
         <div className="flex items-center">
           <h3 className="text-xl font-semibold flex items-center">
@@ -390,41 +379,14 @@ export default function Home() {
             Log
           </button>
         </form>
-        <div className="border-t pt-6">
-          <h4 className="text-lg font-semibold mb-2">Today's Logs</h4>
-          <div className="max-h-48 overflow-y-auto px-2">
-            <ul className="space-y-2">
-              {getLogsForDay(selectedDate).length > 0 ? (
-                getLogsForDay(selectedDate).map((log, i) => (
-                  <li key={i} className="flex items-center text-gray-700 pl-2 pr-4">
-                    <FaDumbbell className="mr-2 text-blue-500" />
-                    <span className="flex-grow">{log.count} pushups</span>
-                    <span className="text-xs text-gray-500 mr-3">
-                      {formatTime(log.timestamp)}
-                    </span>
-                    <button 
-                      onClick={() => deleteLog(log.id)} 
-                      className="text-red-400 hover:text-red-600 transition-colors"
-                      aria-label="Delete log"
-                    >
-                      <FaTrash size={14} />
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <li className="text-gray-500 text-sm pl-2">No logs yet.</li>
-              )}
-            </ul>
-          </div>
-          {logs.length > 0 && (
-            <button
-              onClick={clearLogs}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-            >
-              Clear All Logs
-            </button>
-          )}
-        </div>
+        <LogsSection
+          logs={logs}
+          selectedDate={selectedDate}
+          getLogsForDay={getLogsForDay}
+          deleteLog={deleteLog}
+          clearLogs={clearLogs}
+          deleteDateLogs={deleteDateLogs}
+        />
       </div>
 
       {/* Calendar Modal */}

@@ -34,7 +34,7 @@ ChartJS.register(
 
 export default function StatsPage() {
   const { logs, clearLogs } = useLogs();
-  const { unlocked, allBadges } = useAchievements();
+  const { unlocked, allBadges, validateAchievements } = useAchievements();
   const { prestige } = usePrestige();
   const [range, setRange] = useState("week");
 
@@ -297,10 +297,17 @@ export default function StatsPage() {
   
   function renderPage(chartData: any, options: any, isScatter: boolean) {
     const handleReset = () => {
-      localStorage.removeItem("unlockedBadges");
+      // Clear all achievement-related localStorage items
+      localStorage.removeItem("achievements");
       localStorage.removeItem("prestigeLevel");
-      localStorage.removeItem("toastedBadges");
+      
+      // Clear logs
       clearLogs();
+      
+      // Force validation after clearing logs
+      validateAchievements();
+      
+      // Force reload to update all contexts
       window.location.reload();
     };
 

@@ -5,6 +5,7 @@ import { AchievementProvider } from "./context/AchievementContext";
 import { ToastProvider } from "./context/ToastContext";
 import { PrestigeProvider } from "./context/PrestigeContext";
 import Header from "./components/Header";
+import { Toaster } from 'react-hot-toast';
 
 export const metadata = {
   title: "Pushup Pal",
@@ -34,6 +35,35 @@ export default function RootLayout({
             </LogProvider>
           </GoalProvider>
         </ToastProvider>
+        <Toaster 
+          position="top-right" 
+          reverseOrder={false} 
+          gutter={8}
+          toastOptions={{
+            duration: 3000,
+            style: {
+              borderRadius: '6px',
+              padding: '12px 16px',
+            },
+            // Custom styling
+            success: {
+              style: {
+                background: '#3b82f6',
+                color: 'white',
+              },
+            },
+            error: {
+              style: {
+                background: '#ef4444',
+                color: 'white',
+              },
+              // Remove close button for error toasts
+              icon: null,
+            },
+            // Custom animations
+            className: 'toast-animation',
+          }}
+        />
       </body>
     </html>
   );
