@@ -440,14 +440,19 @@ export default function Home() {
             }, 100);
           }}
           pushupData={logs.reduce((acc, log) => {
-            const dateString = new Date(log.timestamp).toISOString().split('T')[0];
-            
-            const existingEntry = acc.find(item => item.date === dateString);
-            
-            if (existingEntry) {
-              existingEntry.count += log.count;
-            } else {
-              acc.push({ date: dateString, count: log.count });
+            try {
+              const logDate = new Date(log.timestamp);
+              const dateString = logDate.toISOString().split('T')[0];
+              
+              const existingEntry = acc.find(item => item.date === dateString);
+              
+              if (existingEntry) {
+                existingEntry.count += log.count;
+              } else {
+                acc.push({ date: dateString, count: log.count });
+              }
+            } catch (e) {
+              console.error("Invalid timestamp format:", log.timestamp);
             }
             
             return acc;
