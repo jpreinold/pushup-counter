@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaChevronLeft, FaChevronRight, FaDumbbell } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaDumbbell, FaFire } from "react-icons/fa";
 
 interface PushupData {
   date: string;
@@ -10,9 +10,10 @@ interface CalendarModalProps {
   onClose: () => void;
   onSelectDate: (date: Date) => void;
   pushupData?: PushupData[];
+  logs: Array<{id: string, timestamp: string, count: number}>;
 }
 
-export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }: CalendarModalProps) {
+export default function CalendarModal({ onClose, onSelectDate, pushupData = [], logs }: CalendarModalProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -57,6 +58,72 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
     return entry ? entry.count : 0;
   };
 
+  // Function to get logs for a given day
+  const getLogsForDay = (day: Date) =>
+    logs.filter((log) => {
+      try {
+        const logDate = new Date(log.timestamp);
+        return (
+          logDate.getFullYear() === day.getFullYear() &&
+          logDate.getMonth() === day.getMonth() &&
+          logDate.getDate() === day.getDate()
+        );
+      } catch (e) {
+        return false;
+      }
+    });
+
+  // Function to calculate streak for a date
+  const calculateStreak = (date: Date): number => {
+    if (date > today) return 0;
+    
+    // Check if there are logs for the current date
+    const hasLogsForCurrentDate = getLogsForDay(date).length > 0;
+    
+    if (!hasLogsForCurrentDate) return 0;
+    
+    // Count current date as part of streak
+    let streak = 1;
+    
+    // Check previous days
+    let checkDate = new Date(date);
+    while (true) {
+      // Move to previous day
+      checkDate.setDate(checkDate.getDate() - 1);
+      
+      // Check if there are logs for this day
+      const hasLogs = getLogsForDay(checkDate).length > 0;
+      
+      if (hasLogs) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  // Function to check if a date is the start of a streak
+  const isStartOfStreak = (date: Date): boolean => {
+    if (date > today) return false;
+    
+    const streak = calculateStreak(date);
+    if (streak <= 1) return false;
+    
+    // Check if the day before has no logs
+    const prevDay = new Date(date);
+    prevDay.setDate(prevDay.getDate() - 1);
+    
+    return getLogsForDay(prevDay).length === 0;
+  };
+
+  // Function to check if a date is part of a streak
+  const isPartOfStreak = (date: Date): boolean => {
+    if (date > today) return false;
+    return calculateStreak(date) > 1;
+  };
+
   const changeMonth = (offset: number) => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + offset);
@@ -93,6 +160,18 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
             </button>
           </div>
           
+          {/* Calendar Legend */}
+          <div className="flex justify-end items-center mb-2 text-xs">
+            <div className="flex items-center mr-3">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-300 to-red-500 mr-1"></div>
+              <span>Streak</span>
+            </div>
+            <div className="flex items-center">
+              <FaDumbbell className="text-blue-600 mr-1" size={10} />
+              <span>Workout</span>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-7 gap-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="text-center text-sm font-medium py-1">
@@ -107,6 +186,11 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
               // Only get pushup count if it's not a future date
               const pushupCount = (date && !isFutureDate) ? getPushupCount(date) : 0;
               
+              // Check if date is part of a streak
+              const streak = date ? calculateStreak(date) : 0;
+              const isStreak = streak > 1;
+              const streakStart = date ? isStartOfStreak(date) : false;
+              
               return (
                 <div key={index} className="relative">
                   <button
@@ -116,14 +200,37 @@ export default function CalendarModal({ onClose, onSelectDate, pushupData = [] }
                       p-2 text-center rounded w-full h-full flex flex-col items-center justify-start
                       ${!date ? 'invisible' : ''}
                       ${date?.toDateString() === today.toDateString() ? 'bg-blue-100' : ''}
+                      ${isStreak ? 'bg-gradient-to-r from-orange-100 to-red-100' : ''}
                       ${isFutureDate ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-blue-50'}
+                      relative overflow-hidden
                     `}
                   >
-                    <span className="mb-1">{date?.getDate()}</span>
+                    <span className={`mb-1 ${isStreak ? 'font-medium' : ''}`}>
+                      {date?.getDate()}
+                    </span>
+                    
+                    {/* Streak indicator */}
+                    {isStreak && (
+                      <div className="absolute top-0 right-0 p-0.5">
+                        <FaFire className="text-orange-500" size={10} />
+                      </div>
+                    )}
+                    
+                    {/* Pushup count indicator */}
                     {date && !isFutureDate && pushupCount > 0 && (
                       <div className="flex items-center text-xs text-blue-600">
                         <FaDumbbell className="mr-1 text-blue-600" size={12} />
                         <span>{pushupCount}</span>
+                      </div>
+                    )}
+                    
+                    {/* Show streak count on hover */}
+                    {isStreak && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/80 to-red-500/80 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold">
+                        <div className="flex items-center">
+                          <FaFire className="mr-1" />
+                          <span>{streak}</span>
+                        </div>
                       </div>
                     )}
                   </button>

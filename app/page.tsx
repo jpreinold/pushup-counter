@@ -464,6 +464,7 @@ export default function Home() {
             
             return acc;
           }, [] as Array<{date: string, count: number}>)}
+          logs={logs}
         />
       )}
     </div>
