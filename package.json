@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
     "@types/react-datepicker": "^6.2.0",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.8",
