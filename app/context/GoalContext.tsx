@@ -22,6 +22,13 @@ type GoalHistory = {
 
 const GoalContext = createContext<GoalContextType | undefined>(undefined);
 
+// Custom event for goal changes
+const emitGoalsChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('goalsChanged'));
+  }
+};
+
 export function GoalProvider({ children }: { children: ReactNode }) {
   const [goalHistory, setGoalHistory] = useState<GoalHistory[]>([]);
   const [currentGoal, setCurrentGoal] = useState(50);
@@ -70,6 +77,9 @@ export function GoalProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('dailyGoal', mostRecentPast.value.toString());
         }
       }
+      
+      // Emit goalsChanged event after goal history update
+      emitGoalsChanged();
     }
   }, [goalHistory]);
 

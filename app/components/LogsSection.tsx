@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FaTrash, FaDumbbell } from 'react-icons/fa';
 import { formatTime } from '../utils/dateUtils';
-import { useAchievements } from '../context/AchievementContext';
 import { useLogs } from '../context/LogContext';
 
 interface LogsSectionProps {
@@ -22,19 +21,16 @@ export default function LogsSection({
   deleteDateLogs 
 }: LogsSectionProps) {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
-  const { validateAchievements } = useAchievements();
   const { logs: contextLogs } = useLogs();
   
-  // Wrap deleteLog to also validate achievements
+  // Wrap deleteLog and simply call the function (achievements are handled by useEffect in parent)
   const handleDeleteLog = (id: string) => {
     deleteLog(id);
-    validateAchievements();
   };
   
-  // Wrap deleteDateLogs to also validate achievements
+  // Wrap deleteDateLogs and simply call the function (achievements are handled by useEffect in parent)
   const handleDeleteDateLogs = (date: Date) => {
     deleteDateLogs(date);
-    validateAchievements();
   };
   
   return (
@@ -79,10 +75,7 @@ export default function LogsSection({
       
       {contextLogs.length > 0 && (
         <button
-          onClick={() => {
-            clearLogs();
-            validateAchievements();
-          }}
+          onClick={() => clearLogs()}
           className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
         >
           Clear All Logs

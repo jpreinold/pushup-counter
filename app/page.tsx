@@ -1,15 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useGoal } from "./context/GoalContext";
 import { useLogs } from "./context/LogContext";
 import { useAchievements } from "./context/AchievementContext";
+import { useAuth } from "./context/AuthContext";
 import { FaDumbbell, FaCheckCircle, FaArrowAltCircleRight, FaCalendar, FaCalendarAlt, FaTrash, FaEdit } from "react-icons/fa";
 import ProgressBar from "./components/ProgressBar";
 import CalendarModal from "./components/CalendarModal";
 import StreakCounter from "./components/StreakCounter";
 import LogsSection from "./components/LogsSection";
 import { formatDate } from "./utils/dateUtils";
+import { useToast } from "./context/ToastContext";
+import confetti from 'canvas-confetti';
 
 // Utility to format a date as "April 4"
 const formatTime = (timestamp: string) => {
@@ -18,37 +22,67 @@ const formatTime = (timestamp: string) => {
 };
 
 export default function Home() {
+  // Auth and router hooks
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  // Context hooks
   const { goal, setGoal, getGoalForDate } = useGoal();
   const { logs, addLog, clearLogs, deleteLog, deleteDateLogs } = useLogs();
-  const { checkForAchievements } = useAchievements();
+  const { checkForAchievements, validateAchievements, achievements, allBadges } = useAchievements();
+  const { showToast } = useToast();
+
+  // State hooks
   const [logValue, setLogValue] = useState("");
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState("");
-  const goalInputRef = useRef<HTMLInputElement>(null);
-
-  // Determine today's date (with time stripped)
-  const today = new Date();
-  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  // Generate an array of past 30 days (including today)
-  const daysRange = 30;
-  const datesArray: Date[] = [];
-  for (let i = daysRange - 1; i >= 0; i--) {
-    const d = new Date(todayDate);
-    d.setDate(todayDate.getDate() - i);
-    datesArray.push(d);
-  }
-
-  // Selected date state (default: today)
-  const [selectedDate, setSelectedDate] = useState(todayDate);
-
-  // State for showing the calendar modal
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  });
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [todayVisible, setTodayVisible] = useState(true);
 
-  // Reference for the date carousel container and for the "today" chip
+  // Ref hooks
+  const goalInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const todayChipRef = useRef<HTMLButtonElement>(null);
-  const [todayVisible, setTodayVisible] = useState(true);
+
+  // Local state to track achievements for comparison
+  const [prevAchievements, setPrevAchievements] = useState<string[]>([]);
+  const initialLoadRef = useRef(true);
+  
+  // Update prevAchievements whenever achievements change
+  useEffect(() => {
+    if (achievements && achievements.length > 0) {
+      const earnedIds = achievements
+        .filter(a => a.earned)
+        .map(a => a.id);
+      
+      // Just update our tracking state, don't show notifications
+      // since AchievementContext already handles that
+      setPrevAchievements(earnedIds);
+    }
+  }, [achievements]);
+
+  // Check for achievement changes after logs or goal changes
+  useEffect(() => {
+    // Skip immediate check on initial load
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
+    }
+    
+    checkForAchievements();
+    validateAchievements();
+  }, [logs, goal, checkForAchievements, validateAchievements]);
+
+  // Check authentication on initial load
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, loading, router]);
 
   // IntersectionObserver to track visibility of today's chip
   useEffect(() => {
@@ -73,14 +107,58 @@ export default function Home() {
     };
   }, [carouselRef.current]);
 
-  // Add this new useEffect to scroll to today on mount
+  // Scroll to today on mount and ensure it's selected
   useEffect(() => {
     if (carouselRef.current) {
+      // Scroll to the end where today's date is
       carouselRef.current.scrollLeft = carouselRef.current.scrollWidth;
+      
+      // Ensure today's date is selected
+      const today = new Date();
+      const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      setSelectedDate(todayDate);
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, [carouselRef.current]);
 
-  // Handler for the wheel event: converts vertical scroll to horizontal scroll in carousel
+  // Update tempGoal when selectedDate or dateSpecificGoal changes
+  useEffect(() => {
+    const dateSpecificGoal = getGoalForDate(selectedDate);
+    setTempGoal(dateSpecificGoal.toString());
+  }, [selectedDate, getGoalForDate]);
+
+  // Handle click outside to save goal
+  useEffect(() => {
+    if (isEditingGoal) {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (goalInputRef.current && !goalInputRef.current.contains(e.target as Node)) {
+          handleGoalUpdate();
+        }
+      };
+      
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isEditingGoal, tempGoal]);
+
+  // If still loading or not authenticated, show nothing
+  if (loading || !user) {
+    return null;
+  }
+
+  // Determine today's date (with time stripped)
+  const today = new Date();
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  // Generate an array of past 30 days (including today)
+  const daysRange = 30;
+  const datesArray: Date[] = [];
+  for (let i = daysRange - 1; i >= 0; i--) {
+    const d = new Date(todayDate);
+    d.setDate(todayDate.getDate() - i);
+    datesArray.push(d);
+  }
+
+  // Handler for the wheel event
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (carouselRef.current) {
       e.preventDefault();
@@ -88,7 +166,7 @@ export default function Home() {
     }
   };
 
-  // Handler for the Today button: resets selected date and autoscrolls so today's chip is visible
+  // Handler for the Today button
   const goToToday = () => {
     setSelectedDate(todayDate);
     if (carouselRef.current) {
@@ -114,6 +192,7 @@ export default function Home() {
         return false;
       }
     });
+
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
 
@@ -125,41 +204,26 @@ export default function Home() {
   const pushupsLeft = Math.max(dateSpecificGoal - totalSelected, 0);
   const progress = dateSpecificGoal > 0 ? totalSelected / dateSpecificGoal : 0;
 
-  // Update tempGoal when selectedDate or dateSpecificGoal changes
-  useEffect(() => {
-    setTempGoal(dateSpecificGoal.toString());
-  }, [selectedDate, dateSpecificGoal]);
-
   // Calculate streak for a given date
   const calculateStreak = (date: Date): number => {
-    // Clone the date to avoid modifying the original
     let currentDate = new Date(date);
     let streak = 0;
     
-    // Check if there are logs for the current date
     const hasLogsForCurrentDate = getLogsForDay(currentDate).length > 0;
-    
-    // If no logs for current date, return 0
     if (!hasLogsForCurrentDate) {
       return 0;
     }
     
-    // Count current date as part of streak
     streak = 1;
-    
-    // Check previous days
     let checkDate = new Date(currentDate);
+    
     while (true) {
-      // Move to previous day
       checkDate.setDate(checkDate.getDate() - 1);
-      
-      // Check if there are logs for this day
       const hasLogs = getLogsForDay(checkDate).length > 0;
       
       if (hasLogs) {
         streak++;
       } else {
-        // Break the loop when we find a day without logs
         break;
       }
     }
@@ -171,14 +235,11 @@ export default function Home() {
   const currentStreak = calculateStreak(selectedDate);
 
   // Handler for logging pushups
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!logValue || parseInt(logValue) <= 0) return;
 
-    // Use current date and time instead of just the selected date
     const now = new Date();
-    
-    // If using a selected date, preserve the date but use current time
     const logDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth(),
@@ -188,40 +249,23 @@ export default function Home() {
       now.getSeconds()
     );
     
-    // Call addLog with just the count and timestamp
-    addLog(parseInt(logValue), logDate.toISOString());
-    
-    // Then check for achievements separately
-    checkForAchievements();
-    
+    await addLog(parseInt(logValue), logDate.toISOString());
     setLogValue("");
+    
+    // Direct check will be handled by the useEffect dependency on logs
   };
 
   // Handler for updating the goal
-  const handleGoalUpdate = () => {
+  const handleGoalUpdate = async () => {
     const newGoal = parseInt(tempGoal);
     if (!isNaN(newGoal) && newGoal >= 0) {
       setGoal(newGoal, selectedDate);
+      // Direct check will be handled by the useEffect dependency on goal
     } else {
-      // Reset to the original value if invalid
       setTempGoal(dateSpecificGoal.toString());
     }
     setIsEditingGoal(false);
   };
-
-  // Handle click outside to save goal
-  useEffect(() => {
-    if (isEditingGoal) {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (goalInputRef.current && !goalInputRef.current.contains(e.target as Node)) {
-          handleGoalUpdate();
-        }
-      };
-      
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isEditingGoal, tempGoal, dateSpecificGoal]);
   
   // Handle key press for goal input
   const handleGoalKeyDown = (e: React.KeyboardEvent) => {
@@ -232,12 +276,6 @@ export default function Home() {
       setTempGoal(dateSpecificGoal.toString());
     }
   };
-
-  // Add state for tooltip visibility
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  // Add state for confirmation modal
-  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">

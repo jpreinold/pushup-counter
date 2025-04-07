@@ -14,6 +14,7 @@ import { usePrestige } from "./PrestigeContext";
 import { ALL_BADGES, Badge, DerivedStats } from "../data/achievements";
 import confetti from 'canvas-confetti';
 import { useGoal } from './GoalContext';
+import { useAuth } from "./AuthContext";
 
 // Add this type declaration if you're still having issues
 type ConfettiOptions = {
@@ -54,10 +55,10 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const { prestige } = usePrestige();
   const { goal } = useGoal();
-  
-  // Add a processing ref to prevent duplicate validations
+  const { user } = useAuth();
   const isProcessing = useRef(false);
-  
+  const isInitialLoad = useRef(true);
+
   // Initialize achievements from localStorage or with default empty array
   const [achievements, setAchievements] = useState<Achievement[]>(() => {
     if (typeof window !== "undefined") {
@@ -72,6 +73,16 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     }
     return [];
   });
+
+  // Reset initial load flag after component mounts
+  useEffect(() => {
+    // Set a small delay to allow the initial render to complete
+    const timer = setTimeout(() => {
+      isInitialLoad.current = false;
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate unlocked IDs from achievements
   const [unlocked, setUnlocked] = useState<string[]>([]);
@@ -120,8 +131,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
 
   // Check for new achievements
   const checkForAchievements = () => {
-    // Skip if already processing to prevent duplicates
-    if (isProcessing.current) return;
+    if (isProcessing.current || !user) return;
     isProcessing.current = true;
     
     try {
@@ -144,7 +154,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         
         // If badge is not earned yet, check if it qualifies now
         if (!existing || !existingAchievements[existingIndex].earned) {
-          const qualifies = badge.condition(logs, stats, unlocked, ALL_BADGES);
+          const qualifies = badge.condition(logs, stats);
           
           if (!qualifies) return;
           
@@ -165,16 +175,19 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
           
           newAchievementsEarned = true;
           
-          // Show notification using original toast system
-          showToast(`${badge.emoji} Achievement Unlocked: ${badge.name}`);
-          
-          // Trigger confetti
-          if (typeof window !== 'undefined') {
-            confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-            });
+          // Only show notifications if not during initial load
+          if (!isInitialLoad.current) {
+            // Show notification using original toast system
+            showToast(`${badge.emoji} Achievement Unlocked: ${badge.name}`);
+            
+            // Trigger confetti
+            if (typeof window !== 'undefined') {
+              confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+              });
+            }
           }
         }
       });
@@ -190,8 +203,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   
   // Validate if earned achievements still qualify
   const validateAchievements = () => {
-    // Skip if already processing to prevent duplicates
-    if (isProcessing.current) return;
+    if (isProcessing.current || !user) return;
     isProcessing.current = true;
     
     try {
@@ -205,7 +217,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         
         if (!badge) return; // Skip if badge definition not found
         
-        const stillQualifies = badge.condition(logs, stats, unlocked, ALL_BADGES);
+        const stillQualifies = badge.condition(logs, stats);
         
         if (!stillQualifies) {
           achievementsToRevoke.push(achievement);
@@ -228,48 +240,23 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         
         setAchievements(updatedAchievements);
         
-        // Show notifications for revoked achievements using original toast system
-        achievementsToRevoke.forEach(achievement => {
-          const badge = ALL_BADGES.find(b => b.id === achievement.id);
-          if (badge) {
-            // Use the error type for badge removal notifications
-            showToast(`❌ Badge Lost: ${badge.name}`, "error");
-          }
-        });
+        // Only show notifications if not during initial load
+        if (!isInitialLoad.current) {
+          // Show notifications for revoked achievements using original toast system
+          achievementsToRevoke.forEach(achievement => {
+            const badge = ALL_BADGES.find(b => b.id === achievement.id);
+            if (badge) {
+              // Use the error type for badge removal notifications
+              showToast(`❌ Badge Lost: ${badge.name}`, "error");
+            }
+          });
+        }
       }
     } finally {
       // Reset processing flag when done
       isProcessing.current = false;
     }
   };
-
-  // Check for achievements when logs/goal/prestige change directly
-  // Use a useEffect with a cleanup function
-  useEffect(() => {
-    // Skip initial run to prevent duplicate validation with deleted logs
-    const timer = setTimeout(() => {
-      if (!isProcessing.current) {
-        checkForAchievements();
-        validateAchievements();
-      }
-    }, 50);
-    
-    // Add event listener for logsChanged event
-    const handleLogsChanged = () => {
-      if (!isProcessing.current) {
-        checkForAchievements();
-        validateAchievements();
-      }
-    };
-    
-    window.addEventListener('logsChanged', handleLogsChanged);
-    
-    // Clean up event listener on unmount
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('logsChanged', handleLogsChanged);
-    };
-  }, [logs, goal, prestige, checkForAchievements, validateAchievements]);
 
   return (
     <AchievementContext.Provider
