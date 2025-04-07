@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,21 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+
+  // Add effect to listen for email verification
+  useEffect(() => {
+    if (!success) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+        router.push('/');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [success, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +46,9 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
       if (error) throw error;
@@ -66,14 +84,9 @@ export default function SignupPage() {
               <div className="text-5xl mb-4">📧</div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">Check Your Email</h2>
               <p className="text-gray-600 mb-4">
-                We've sent you a verification email. Please check your inbox and verify your email before logging in.
+                We've sent you a verification email. Please check your inbox and click the verification link.
+                Once verified, you'll be automatically redirected to start tracking your pushups!
               </p>
-              <Link 
-                href="/auth/login"
-                className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
-              >
-                Go to Login
-              </Link>
             </div>
           ) : (
             <form className="space-y-6" onSubmit={handleSignup}>
