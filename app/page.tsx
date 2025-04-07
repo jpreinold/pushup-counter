@@ -65,18 +65,6 @@ export default function Home() {
     }
   }, [achievements]);
 
-  // Check for achievement changes after logs or goal changes
-  useEffect(() => {
-    // Skip immediate check on initial load
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false;
-      return;
-    }
-    
-    checkForAchievements();
-    validateAchievements();
-  }, [logs, goal, checkForAchievements, validateAchievements]);
-
   // Check authentication on initial load
   useEffect(() => {
     if (!loading && !user) {
@@ -251,8 +239,6 @@ export default function Home() {
     
     await addLog(parseInt(logValue), logDate.toISOString());
     setLogValue("");
-    
-    // Direct check will be handled by the useEffect dependency on logs
   };
 
   // Handler for updating the goal
@@ -417,6 +403,7 @@ export default function Home() {
             Log
           </button>
         </form>
+        
         <LogsSection
           logs={logs}
           selectedDate={selectedDate}

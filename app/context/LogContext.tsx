@@ -84,12 +84,16 @@ export function LogProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setLogs(prevLogs => {
-          const updatedLogs = [data[0], ...prevLogs];
-          // Emit event after updating state but within the callback
-          setTimeout(() => emitLogsChanged(), 0);
-          return updatedLogs;
-        });
+        // First update state
+        const updatedLog = data[0];
+        setLogs(prevLogs => [updatedLog, ...prevLogs]);
+        
+        // Then emit event after the state update completes
+        // Use a very small timeout to ensure React has processed the state update
+        setTimeout(() => {
+          console.log("Log added, emitting logsChanged event");
+          emitLogsChanged();
+        }, 50);
       }
     } catch (error) {
       console.error('Error adding log:', error);
@@ -107,11 +111,14 @@ export function LogProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      setLogs(() => {
-        // Emit event after updating state but within the callback
-        setTimeout(() => emitLogsChanged(), 0);
-        return [];
-      });
+      // First update state
+      setLogs([]);
+      
+      // Then emit event after the state update completes
+      setTimeout(() => {
+        console.log("Logs cleared, emitting logsChanged event");
+        emitLogsChanged();
+      }, 50);
     } catch (error) {
       console.error('Error clearing logs:', error);
     }
@@ -129,12 +136,14 @@ export function LogProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      setLogs(prevLogs => {
-        const updatedLogs = prevLogs.filter(log => log.id !== id);
-        // Emit event after updating state but within the callback
-        setTimeout(() => emitLogsChanged(), 0);
-        return updatedLogs;
-      });
+      // First update state
+      setLogs(prevLogs => prevLogs.filter(log => log.id !== id));
+      
+      // Then emit event after the state update completes
+      setTimeout(() => {
+        console.log("Log deleted, emitting logsChanged event");
+        emitLogsChanged();
+      }, 50);
     } catch (error) {
       console.error('Error deleting log:', error);
     }
@@ -180,15 +189,18 @@ export function LogProvider({ children }: { children: ReactNode }) {
 
         if (deleteError) throw deleteError;
         
-        // Update local state
-        setLogs(prevLogs => {
-          const updatedLogs = prevLogs.filter(log => 
+        // First update state
+        setLogs(prevLogs => 
+          prevLogs.filter(log => 
             !logsToDelete.some(logToDelete => logToDelete.id === log.id)
-          );
-          // Emit event after updating state but within the callback
-          setTimeout(() => emitLogsChanged(), 0);
-          return updatedLogs;
-        });
+          )
+        );
+        
+        // Then emit event after the state update completes
+        setTimeout(() => {
+          console.log("Date logs deleted, emitting logsChanged event");
+          emitLogsChanged();
+        }, 50);
       }
     } catch (error) {
       console.error('Error deleting date logs:', error);

@@ -15,6 +15,8 @@ import { ALL_BADGES, Badge, DerivedStats } from "../data/achievements";
 import confetti from 'canvas-confetti';
 import { useGoal } from './GoalContext';
 import { useAuth } from "./AuthContext";
+import { supabase } from "../lib/supabase";
+import { toast } from "react-hot-toast";
 
 // Add this type declaration if you're still having issues
 type ConfettiOptions = {
@@ -58,105 +60,337 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const isProcessing = useRef(false);
   const isInitialLoad = useRef(true);
+  const [loading, setLoading] = useState(true);
+  const lastProcessTime = useRef(0);
 
-  // Initialize achievements from localStorage or with default empty array
-  const [achievements, setAchievements] = useState<Achievement[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("achievements");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("Failed to parse saved achievements", e);
-        }
-      }
-    }
-    return [];
-  });
-
-  // Reset initial load flag after component mounts
-  useEffect(() => {
-    // Set a small delay to allow the initial render to complete
-    const timer = setTimeout(() => {
-      isInitialLoad.current = false;
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Initialize achievements
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   // Calculate unlocked IDs from achievements
   const [unlocked, setUnlocked] = useState<string[]>([]);
 
-  // Save achievements to localStorage whenever they change
+  // Fetch achievements from Supabase when user changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("achievements", JSON.stringify(achievements));
-      
-      // Update unlocked IDs based on earned achievements
-      const unlockedIds = achievements
-        .filter(achievement => achievement.earned)
-        .map(achievement => achievement.id);
-      
-      setUnlocked(unlockedIds);
+    if (user) {
+      fetchAchievements();
+    } else {
+      setAchievements([]);
+      setUnlocked([]);
+      setLoading(false);
     }
+  }, [user]);
+
+  // Listen for log changes and validate achievements
+  useEffect(() => {
+    const handleLogsChanged = () => {
+      if (user && !loading) {
+        console.log("Logs changed event received, processing achievements");
+        console.log("Current logs count:", logs.length);
+        
+        // Give React a moment to fully update the logs state
+        setTimeout(() => {
+          console.log("Starting delayed achievement processing");
+          console.log("Logs count at processing time:", logs.length);
+          console.log("Logs details:", logs.map(l => ({ 
+            date: new Date(l.timestamp).toLocaleDateString(),
+            time: new Date(l.timestamp).toLocaleTimeString(),
+            count: l.count 
+          })));
+          
+          // Use an inline function call to avoid the reference issue
+          processAchievements();
+        }, 500); // Increased delay to ensure state is fully updated
+      }
+    };
+
+    window.addEventListener('logsChanged', handleLogsChanged);
+    
+    return () => {
+      window.removeEventListener('logsChanged', handleLogsChanged);
+    };
+  }, [user, loading, logs]); // Remove processAchievements from dependencies
+
+  // Listen for goal changes and validate achievements
+  useEffect(() => {
+    const handleGoalsChanged = () => {
+      if (user && !loading) {
+        console.log("Goals changed event received, processing achievements");
+        console.log("Current goal:", goal);
+        
+        // Give React a moment to fully update the goal state
+        setTimeout(() => {
+          console.log("Starting delayed achievement processing for goal change");
+          console.log("Current goal at processing time:", goal);
+          
+          // Process achievements to check for badge changes
+          processAchievements();
+        }, 500); // Use the same delay as for logs changes
+      }
+    };
+
+    window.addEventListener('goalsChanged', handleGoalsChanged);
+    
+    return () => {
+      window.removeEventListener('goalsChanged', handleGoalsChanged);
+    };
+  }, [user, loading, goal]);
+
+  // Reset initial load flag after component mounts
+  useEffect(() => {
+    // Set isInitialLoad to true on mount
+    isInitialLoad.current = true;
+    
+    // Set a small delay to allow the initial render and data loading to complete
+    const timer = setTimeout(() => {
+      console.log("Initial load complete, enabling notifications");
+      isInitialLoad.current = false;
+    }, 2000); // Increased delay to allow data loading
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch achievements from Supabase
+  const fetchAchievements = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      console.log("Fetching achievements from Supabase...");
+      const { data, error } = await supabase
+        .from('achievements')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Convert from Supabase format to our Achievement format
+        // All fetched achievements are earned, since we only store earned ones
+        const achievementList = data.map(item => ({
+          id: item.achievement_id,
+          title: ALL_BADGES.find(b => b.id === item.achievement_id)?.name || '',
+          description: ALL_BADGES.find(b => b.id === item.achievement_id)?.description || '',
+          icon: ALL_BADGES.find(b => b.id === item.achievement_id)?.emoji || '🏆',
+          earned: true, // All stored achievements are earned
+          date: item.earned_date
+        }));
+        
+        console.log(`Found ${achievementList.length} earned achievements in database`);
+        setAchievements(achievementList);
+        
+        // Update unlocked IDs - all achievements are unlocked since we only store earned ones
+        setUnlocked(achievementList.map(achievement => achievement.id));
+      } else {
+        console.log("No achievements found in database");
+        // If no achievements found in Supabase, try to migrate from localStorage
+        const saved = localStorage.getItem("achievements");
+        if (saved) {
+          try {
+            const localAchievements = JSON.parse(saved);
+            if (localAchievements.length > 0) {
+              console.log(`Migrating ${localAchievements.length} achievements from localStorage`);
+              // Save local achievements to Supabase
+              await Promise.all(localAchievements.map(async (achievement: Achievement) => {
+                if (achievement.earned) {
+                  await supabase.from('achievements').upsert({
+                    user_id: user.id,
+                    achievement_id: achievement.id,
+                    badge_id: achievement.id,
+                    earned: true,
+                    earned_date: achievement.date || new Date().toISOString()
+                  }, { onConflict: 'user_id,achievement_id' });
+                }
+              }));
+              
+              // Fetch again after migration
+              fetchAchievements();
+              return;
+            }
+          } catch (e) {
+            console.error("Failed to parse saved achievements", e);
+          }
+        }
+        
+        setAchievements([]);
+        setUnlocked([]);
+      }
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
+      
+      // Fallback to localStorage if Supabase fails
+      const saved = localStorage.getItem("achievements");
+      if (saved) {
+        try {
+          setAchievements(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse saved achievements", e);
+          setAchievements([]);
+        }
+      } else {
+        setAchievements([]);
+      }
+    } finally {
+      setLoading(false);
+      // Set initial load to false after a delay
+      setTimeout(() => {
+        console.log("Setting initial load flag to false");
+        isInitialLoad.current = false;
+      }, 1000);
+    }
+  };
+
+  // Update unlocked IDs whenever achievements change
+  useEffect(() => {
+    const unlockedIds = achievements
+      .filter(achievement => achievement.earned)
+      .map(achievement => achievement.id);
+    
+    setUnlocked(unlockedIds);
   }, [achievements]);
 
   // Generate derived stats for badge validation
   const getDerivedStats = (): DerivedStats => {
-    // Group logs by date
+    console.log("Calculating derived stats from logs", logs.length);
+    
+    // Group logs by date (using YYYY-MM-DD format)
     const dayCounts: { [date: string]: number } = {};
     let totalPushups = 0;
     let goalsHit = 0;
     
     logs.forEach(log => {
-      const date = new Date(log.timestamp).toISOString().split('T')[0];
-      dayCounts[date] = (dayCounts[date] || 0) + log.count;
+      const logDate = new Date(log.timestamp);
+      const dateKey = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+      
+      dayCounts[dateKey] = (dayCounts[dateKey] || 0) + log.count;
       totalPushups += log.count;
     });
     
     // Count days where goal was met
-    Object.values(dayCounts).forEach(count => {
+    Object.entries(dayCounts).forEach(([date, count]) => {
       if (count >= goal) {
         goalsHit++;
       }
     });
     
-    return {
+    const result = {
       totalPushups,
       daysLogged: Object.keys(dayCounts).length,
       goalsHit,
       dayCounts
     };
+    
+    console.log("Derived stats:", result);
+    return result;
   };
 
-  // Check for new achievements
-  const checkForAchievements = () => {
-    if (isProcessing.current || !user) return;
+  // Save achievement to Supabase
+  const saveAchievement = async (achievement: Achievement): Promise<void> => {
+    if (!user) return;
+    
+    try {
+      console.log("Saving achievement to Supabase:", achievement.id, achievement.earned);
+      
+      if (achievement.earned) {
+        // Insert or update earned achievement
+        const { error } = await supabase
+          .from('achievements')
+          .upsert({
+            user_id: user.id,
+            achievement_id: achievement.id,
+            badge_id: achievement.id,
+            earned: true,
+            earned_date: achievement.date || new Date().toISOString()
+          }, { 
+            onConflict: 'user_id,achievement_id'
+          });
+        
+        if (error) {
+          console.error('Error saving achievement:', error);
+        } else {
+          console.log('Achievement saved successfully:', achievement.id);
+        }
+      } else {
+        // Delete the achievement if it's not earned
+        const { error } = await supabase
+          .from('achievements')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('achievement_id', achievement.id);
+        
+        if (error) {
+          console.error('Error deleting achievement:', error);
+        } else {
+          console.log('Achievement deleted successfully:', achievement.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving/deleting achievement:', error);
+    }
+  };
+
+  // Combined function to process achievements
+  const processAchievements = async () => {
+    if (isProcessing.current || !user || loading) return;
+    console.log("Starting achievement processing...");
     isProcessing.current = true;
     
     try {
-      const stats = getDerivedStats();
+      // First, sync with database to ensure local state is accurate
+      await syncAchievementsWithDatabase();
       
-      // Filter badges by current prestige level
+      const stats = getDerivedStats();
+      console.log("Current stats:", stats);
+      
+      // Get all badges for current prestige level
       const availableBadges = ALL_BADGES.filter(
         badge => badge.rank <= prestige
       );
       
-      let newAchievementsEarned = false;
-      const existingAchievements = [...achievements];
+      // Create a working copy of achievements
+      const updatedAchievements = [...achievements];
+      const pendingNotifications: Array<{type: string, message: string}> = [];
       
-      availableBadges.forEach(badge => {
-        // Check if badge is already earned
-        const existingIndex = existingAchievements.findIndex(
-          a => a.id === badge.id
-        );
-        const existing = existingIndex !== -1;
+      // Process all badges in one go
+      for (const badge of availableBadges) {
+        const qualifies = badge.condition(logs, stats);
+        console.log(`Badge ${badge.id} (${badge.name}) qualifies: ${qualifies}`);
         
-        // If badge is not earned yet, check if it qualifies now
-        if (!existing || !existingAchievements[existingIndex].earned) {
-          const qualifies = badge.condition(logs, stats);
+        // Find if we already have this achievement
+        const index = updatedAchievements.findIndex(a => a.id === badge.id);
+        const existing = index !== -1;
+        const wasEarned = existing && updatedAchievements[index].earned;
+        
+        // Case 1: Currently earned but no longer qualifies
+        if (wasEarned && !qualifies) {
+          console.log(`Revoking badge: ${badge.id}`);
           
-          if (!qualifies) return;
+          // Update our working copy
+          updatedAchievements[index] = {
+            ...updatedAchievements[index],
+            earned: false,
+            date: undefined
+          };
+          
+          // Add notification if not initial load
+          if (!isInitialLoad.current) {
+            pendingNotifications.push({
+              type: "error",
+              message: `${badge.emoji} Achievement Lost: ${badge.name}`
+            });
+          }
+          
+          // Save to Supabase (this will delete it)
+          await saveAchievement({
+            id: badge.id,
+            title: badge.name,
+            description: badge.description,
+            icon: badge.emoji,
+            earned: false
+          });
+        }
+        // Case 2: Not currently earned but now qualifies
+        else if ((!existing || !wasEarned) && qualifies) {
+          console.log(`Awarding badge: ${badge.id}`);
           
           const achievement = {
             id: badge.id,
@@ -167,95 +401,163 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
             date: new Date().toISOString()
           };
           
+          // Update our working copy
           if (existing) {
-            existingAchievements[existingIndex] = achievement;
+            updatedAchievements[index] = achievement;
           } else {
-            existingAchievements.push(achievement);
+            updatedAchievements.push(achievement);
           }
           
-          newAchievementsEarned = true;
-          
-          // Only show notifications if not during initial load
+          // Add notification if not initial load
           if (!isInitialLoad.current) {
-            // Show notification using original toast system
-            showToast(`${badge.emoji} Achievement Unlocked: ${badge.name}`);
+            pendingNotifications.push({
+              type: "success",
+              message: `${badge.emoji} Achievement Unlocked: ${badge.name}`
+            });
+          }
+          
+          // Save to Supabase
+          await saveAchievement(achievement);
+        }
+        // Otherwise, no change needed
+      }
+      
+      // Update state if achievements were changed
+      if (JSON.stringify(updatedAchievements) !== JSON.stringify(achievements)) {
+        console.log("Updating achievements state");
+        
+        // Log what specific achievements were earned or lost
+        const earned = updatedAchievements.filter(a => a.earned && !achievements.some(b => b.id === a.id && b.earned));
+        const lost = achievements.filter(a => a.earned && !updatedAchievements.some(b => b.id === a.id && b.earned));
+        
+        if (earned.length > 0) {
+          console.log("Newly earned achievements:", earned.map(a => a.id).join(", "));
+        }
+        
+        if (lost.length > 0) {
+          console.log("Lost achievements:", lost.map(a => a.id).join(", "));
+        }
+        
+        // Update state first
+        setAchievements(updatedAchievements);
+        
+        // IMPORTANT: Show notifications immediately - don't wait for state update
+        if (!isInitialLoad.current && pendingNotifications.length > 0) {
+          console.log(`Showing ${pendingNotifications.length} notifications immediately`);
+          
+          // Don't use setTimeout - display toasts immediately
+          // Process notifications one by one
+          for (const note of pendingNotifications) {
+            console.log(`Showing notification: ${note.message}`);
             
-            // Trigger confetti
-            if (typeof window !== 'undefined') {
-              confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
+            // Using toast.success or toast.error directly bypasses any potential issues
+            if (note.type === "error") {
+              toast.error(note.message, {
+                duration: 4000,  // Longer duration
+                position: 'top-center',  // More visible position
               });
+            } else {
+              toast.success(note.message, {
+                duration: 4000,  // Longer duration
+                position: 'top-center',  // More visible position
+              });
+              
+              // Trigger confetti for earned achievements
+              if (typeof window !== 'undefined') {
+                confetti({
+                  particleCount: 100,
+                  spread: 70,
+                  origin: { y: 0.6 }
+                });
+              }
             }
           }
         }
-      });
-      
-      if (newAchievementsEarned) {
-        setAchievements(existingAchievements);
+      } else {
+        console.log("No achievement changes detected");
       }
     } finally {
-      // Reset processing flag when done
+      console.log("Achievement processing completed");
       isProcessing.current = false;
     }
   };
-  
-  // Validate if earned achievements still qualify
-  const validateAchievements = () => {
-    if (isProcessing.current || !user) return;
-    isProcessing.current = true;
+
+  // Sync local achievements with the database to ensure consistency
+  const syncAchievementsWithDatabase = async () => {
+    if (!user) return;
     
     try {
-      const stats = getDerivedStats();
-      const earnedAchievements = achievements.filter(a => a.earned);
-      const achievementsToRevoke: Achievement[] = [];
-      
-      // Check each earned achievement
-      earnedAchievements.forEach(achievement => {
-        const badge = ALL_BADGES.find(b => b.id === achievement.id);
-        
-        if (!badge) return; // Skip if badge definition not found
-        
-        const stillQualifies = badge.condition(logs, stats);
-        
-        if (!stillQualifies) {
-          achievementsToRevoke.push(achievement);
-        }
-      });
-      
-      // If any achievements need to be revoked
-      if (achievementsToRevoke.length > 0) {
-        // Update the achievements array
-        const updatedAchievements = achievements.map(achievement => {
-          if (achievementsToRevoke.some(a => a.id === achievement.id)) {
-            return { 
-              ...achievement, 
-              earned: false,
-              date: undefined 
-            };
-          }
-          return achievement;
-        });
-        
-        setAchievements(updatedAchievements);
-        
-        // Only show notifications if not during initial load
-        if (!isInitialLoad.current) {
-          // Show notifications for revoked achievements using original toast system
-          achievementsToRevoke.forEach(achievement => {
-            const badge = ALL_BADGES.find(b => b.id === achievement.id);
-            if (badge) {
-              // Use the error type for badge removal notifications
-              showToast(`❌ Badge Lost: ${badge.name}`, "error");
-            }
-          });
-        }
+      console.log("Syncing achievements with database...");
+      const { data, error } = await supabase
+        .from('achievements')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching achievements for sync:', error);
+        return;
       }
-    } finally {
-      // Reset processing flag when done
-      isProcessing.current = false;
+      
+      if (!data || data.length === 0) {
+        console.log("No achievements in database to sync");
+        return;
+      }
+      
+      // Convert database records to Achievement objects
+      const dbAchievements = data.map(item => ({
+        id: item.achievement_id,
+        title: ALL_BADGES.find(b => b.id === item.achievement_id)?.name || '',
+        description: ALL_BADGES.find(b => b.id === item.achievement_id)?.description || '',
+        icon: ALL_BADGES.find(b => b.id === item.achievement_id)?.emoji || '🏆',
+        earned: true,
+        date: item.earned_date
+      }));
+      
+      // Find missing achievements (in DB but not in local state)
+      const localAchievementIds = new Set(achievements.map(a => a.id));
+      const missingAchievements = dbAchievements.filter(a => !localAchievementIds.has(a.id));
+      
+      if (missingAchievements.length > 0) {
+        console.log(`Found ${missingAchievements.length} achievements in DB that are missing from local state`);
+        
+        // Add missing achievements to state silently (without notifications)
+        // Notifications will be handled in the main achievement processing
+        setAchievements(prevAchievements => [...prevAchievements, ...missingAchievements]);
+      }
+      
+      // Find achievements that should be removed (in local state as earned but not in DB)
+      const dbAchievementIds = new Set(data.map(item => item.achievement_id));
+      const achievementsToRemove = achievements.filter(a => a.earned && !dbAchievementIds.has(a.id));
+      
+      if (achievementsToRemove.length > 0) {
+        console.log(`Found ${achievementsToRemove.length} achievements in local state that are missing from DB`);
+        
+        // Update state to mark achievements as not earned
+        // Notifications will be handled in the main achievement processing
+        setAchievements(prevAchievements => 
+          prevAchievements.map(a => 
+            achievementsToRemove.some(remove => remove.id === a.id) 
+              ? { ...a, earned: false, date: undefined } 
+              : a
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error syncing achievements with database:', error);
     }
+  };
+
+  // Keep existing individual functions for backward compatibility and for calling from other places
+  const checkForAchievements = () => {
+    // If already processing, don't start another process
+    if (isProcessing.current) return;
+    processAchievements();
+  };
+  
+  const validateAchievements = () => {
+    // If already processing, don't start another process
+    if (isProcessing.current) return;
+    processAchievements();
   };
 
   return (

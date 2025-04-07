@@ -26,36 +26,73 @@ export const getSortedUniqueDates = (logs: Log[]): string[] => {
 // 🔁 Calculates the longest daily streak (consecutive calendar days)
 export const getLongestStreak = (logs: Log[]): number => {
   if (!logs.length) return 0;
-  const dates = [...new Set(logs.map(log => 
-    new Date(log.timestamp).toISOString().split('T')[0]
-  ))].sort();
+  
+  // Extract dates and normalize them to start of day
+  const dateObjs = logs.map(log => {
+    const date = new Date(log.timestamp);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  });
+  
+  // Get unique dates by converting to strings in format YYYY-MM-DD
+  const uniqueDates = Array.from(new Set(dateObjs.map(date => 
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  ))).sort();
+  
+  console.log("Unique dates for streak calculation:", uniqueDates);
+  
+  if (uniqueDates.length === 0) return 0;
   
   let maxStreak = 1;
   let currentStreak = 1;
   
-  for (let i = 1; i < dates.length; i++) {
-    const curr = new Date(dates[i]);
-    const prev = new Date(dates[i - 1]);
-    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const currParts = uniqueDates[i].split('-').map(Number);
+    const prevParts = uniqueDates[i-1].split('-').map(Number);
     
-    if (diffDays === 1) {
+    // Create date objects for comparison (using noon to avoid DST issues)
+    const currDate = new Date(currParts[0], currParts[1]-1, currParts[2], 12);
+    const prevDate = new Date(prevParts[0], prevParts[1]-1, prevParts[2], 12);
+    
+    // Calculate difference in days
+    const diffTime = currDate.getTime() - prevDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    console.log(`Comparing ${uniqueDates[i-1]} and ${uniqueDates[i]}: diff = ${diffDays} days`);
+    
+    if (Math.round(diffDays) === 1) {
       currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
+      console.log(`Streak continued: ${currentStreak}`);
     } else {
+      console.log(`Streak broken at ${uniqueDates[i-1]} to ${uniqueDates[i]} (${diffDays} days)`);
       currentStreak = 1;
     }
+    
+    maxStreak = Math.max(maxStreak, currentStreak);
   }
   
+  console.log(`Final max streak: ${maxStreak}`);
   return maxStreak;
 };
 
 // Helper function to get daily session counts
 export const getDailySessionCounts = (logs: Log[]): { [date: string]: number } => {
   const dailyCounts: { [date: string]: number } = {};
-  logs.forEach(log => {
-    const date = new Date(log.timestamp).toISOString().split('T')[0];
-    dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+  
+  // Make sure logs are processed in chronological order
+  const sortedLogs = [...logs].sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+  
+  sortedLogs.forEach(log => {
+    // Create a date object and extract just the date part in YYYY-MM-DD format
+    const date = new Date(log.timestamp);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
+    // Increment the count for this date
+    dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
   });
+  
+  console.log("Daily session counts:", dailyCounts);
   return dailyCounts;
 };
 
@@ -123,8 +160,23 @@ export const ALL_BADGES: Badge[] = [
     description: "Log pushups 3 times in one day",
     rank: 1,
     condition: (logs) => {
+      console.log("Checking Triple Session badge condition...");
+      console.log("Total logs:", logs.length);
+      
+      // Get counts of logs per day
       const daily = getDailySessionCounts(logs);
-      return Object.values(daily).some(count => count >= 3);
+      
+      // Find any day with 3+ sessions
+      const daysWithTriple = Object.entries(daily)
+        .filter(([_, count]) => count >= 3)
+        .map(([date]) => date);
+      
+      const hasTripleSession = daysWithTriple.length > 0;
+      
+      console.log("Days with 3+ sessions:", daysWithTriple);
+      console.log("Triple Session qualifies:", hasTripleSession);
+      
+      return hasTripleSession;
     },
   },
   {
@@ -141,6 +193,24 @@ export const ALL_BADGES: Badge[] = [
     emoji: "🗓️",
     description: "Log pushups for 7 days in a row",
     rank: 1,
-    condition: (logs) => getLongestStreak(logs) >= 7,
+    condition: (logs) => {
+      console.log("Checking Week Warrior badge condition...");
+      console.log("Total logs:", logs.length);
+      
+      // Print all log dates for debugging
+      const allDates = logs.map(log => {
+        const d = new Date(log.timestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }).sort();
+      
+      console.log("All log dates:", [...new Set(allDates)]);
+      
+      // Calculate streak
+      const streak = getLongestStreak(logs);
+      const qualifies = streak >= 7;
+      
+      console.log(`Week Warrior: longest streak = ${streak}, qualifies = ${qualifies}`);
+      return qualifies;
+    },
   },
 ];
