@@ -6,7 +6,7 @@ type ProgressBarProps = {
 };
 
 export default function ProgressBar({ progress }: ProgressBarProps) {
-  const percent = Math.min(Math.max(progress * 100, 0), 100);
+  const percent = Math.min(Math.max(progress, 0), 100);
   return (
     <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
       <div

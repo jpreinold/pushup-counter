@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { FaTrash, FaDumbbell } from 'react-icons/fa';
+import { FaTrash, FaDumbbell, FaEdit } from 'react-icons/fa';
 import { formatTime } from '../utils/dateUtils';
 import { useLogs } from '../context/LogContext';
+import { useGoal } from '../context/GoalContext';
+import { format } from 'date-fns';
 
 interface LogsSectionProps {
   logs: Array<{id: string, timestamp: string, count: number}>;
@@ -22,6 +24,7 @@ export default function LogsSection({
 }: LogsSectionProps) {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
   const { logs: contextLogs } = useLogs();
+  const { goalHistory } = useGoal();
   
   // Wrap deleteLog and simply call the function (achievements are handled by useEffect in parent)
   const handleDeleteLog = (id: string) => {
@@ -32,6 +35,36 @@ export default function LogsSection({
   const handleDeleteDateLogs = (date: Date) => {
     deleteDateLogs(date);
   };
+  
+  // Find the goal change for the selected date
+  const getGoalChangeForDate = (date: Date) => {
+    if (!goalHistory || goalHistory.length === 0) return null;
+    
+    // Format the date to match the format used in goalHistory
+    const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // Find the most recent goal change for this date
+    const goalChanges = goalHistory.filter(entry => {
+      const entryDate = new Date(entry.startDate);
+      return (
+        entryDate.getFullYear() === date.getFullYear() &&
+        entryDate.getMonth() === date.getMonth() &&
+        entryDate.getDate() === date.getDate()
+      );
+    });
+    
+    if (goalChanges.length === 0) return null;
+    
+    // Sort by changedAt to get the most recent
+    goalChanges.sort((a, b) => {
+      if (!a.changedAt || !b.changedAt) return 0;
+      return new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime();
+    });
+    
+    return goalChanges[0];
+  };
+  
+  const goalChange = getGoalChangeForDate(selectedDate);
   
   return (
     <div className="border-t pt-6">
@@ -48,30 +81,43 @@ export default function LogsSection({
           </button>
         )}
       </div>
-      <div className="max-h-48 overflow-y-auto px-2">
-        <ul className="space-y-2">
-          {getLogsForDay(selectedDate).length > 0 ? (
-            getLogsForDay(selectedDate).map((log) => (
-              <li key={log.id} className="flex items-center text-gray-700 pl-2 pr-4">
-                <FaDumbbell className="mr-2 text-blue-500" />
-                <span className="flex-grow">{log.count} pushups</span>
-                <span className="text-xs text-gray-500 mr-3">
-                  {formatTime(log.timestamp)}
-                </span>
-                <button 
-                  onClick={() => handleDeleteLog(log.id)}
-                  className="text-red-400 hover:text-red-600 transition-colors"
-                  aria-label="Delete log"
-                >
-                  <FaTrash size={14} />
-                </button>
-              </li>
-            ))
-          ) : (
-            <li className="text-gray-500 text-sm pl-2">No logs yet.</li>
-          )}
-        </ul>
-      </div>
+      
+      {goalChange && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-md flex items-center">
+          <FaEdit className="text-blue-500 mr-2" />
+          <div>
+            <span className="text-sm text-gray-700">
+              Goal set to <span className="font-semibold">{goalChange.value} {goalChange.value === 1 ? 'pushup' : 'pushups'}</span>
+            </span>
+            <span className="text-xs text-gray-500 ml-2">
+              at {goalChange.changedAt ? format(new Date(goalChange.changedAt), 'h:mm a') : 'N/A'}
+            </span>
+          </div>
+        </div>
+      )}
+      
+      <ul className="space-y-2">
+        {getLogsForDay(selectedDate).length > 0 ? (
+          getLogsForDay(selectedDate).map((log) => (
+            <li key={log.id} className="flex items-center text-gray-700 pl-2 pr-4">
+              <FaDumbbell className="mr-2 text-blue-500" />
+              <span className="flex-grow">{log.count} {log.count === 1 ? 'pushup' : 'pushups'}</span>
+              <span className="text-xs text-gray-500 mr-3">
+                {formatTime(log.timestamp)}
+              </span>
+              <button 
+                onClick={() => handleDeleteLog(log.id)}
+                className="text-red-400 hover:text-red-600 transition-colors"
+                aria-label="Delete log"
+              >
+                <FaTrash size={14} />
+              </button>
+            </li>
+          ))
+        ) : (
+          <li className="text-gray-500 text-sm pl-2">No logs yet.</li>
+        )}
+      </ul>
       
       {contextLogs.length > 0 && (
         <button

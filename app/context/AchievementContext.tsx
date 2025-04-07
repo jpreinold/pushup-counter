@@ -60,6 +60,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const isProcessing = useRef(false);
   const isInitialLoad = useRef(true);
+  const processedBadges = useRef<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const lastProcessTime = useRef(0);
 
@@ -68,6 +69,18 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
 
   // Calculate unlocked IDs from achievements
   const [unlocked, setUnlocked] = useState<string[]>([]);
+
+  // Reset processedBadges after 5 minutes to prevent stale state
+  useEffect(() => {
+    const resetInterval = setInterval(() => {
+      if (processedBadges.current.size > 0) {
+        console.log(`Resetting processed badges cache (had ${processedBadges.current.size} entries)`);
+        processedBadges.current.clear();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => clearInterval(resetInterval);
+  }, []);
 
   // Fetch achievements from Supabase when user changes
   useEffect(() => {
@@ -97,8 +110,8 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
             count: l.count 
           })));
           
-          // Use an inline function call to avoid the reference issue
-          processAchievements();
+          // Process all badges when logs change
+          processAchievements('logs');
         }, 500); // Increased delay to ensure state is fully updated
       }
     };
@@ -122,8 +135,8 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
           console.log("Starting delayed achievement processing for goal change");
           console.log("Current goal at processing time:", goal);
           
-          // Process achievements to check for badge changes
-          processAchievements();
+          // Only process goal-related badges when goal changes
+          processAchievements('goal');
         }, 500); // Use the same delay as for logs changes
       }
     };
@@ -329,9 +342,9 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   };
 
   // Combined function to process achievements
-  const processAchievements = async () => {
+  const processAchievements = async (trigger: 'logs' | 'goal' | 'all' = 'all') => {
     if (isProcessing.current || !user || loading) return;
-    console.log("Starting achievement processing...");
+    console.log(`Starting achievement processing (trigger: ${trigger})...`);
     isProcessing.current = true;
     
     try {
@@ -346,12 +359,28 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         badge => badge.rank <= prestige
       );
       
+      // Filter badges based on trigger
+      const badgesToCheck = availableBadges.filter(badge => {
+        if (trigger === 'all') return true;
+        
+        // For goal changes, only check badges that depend on goals
+        if (trigger === 'goal') {
+          // These are the badge IDs that are directly affected by goal changes
+          const goalRelatedBadges = ['daily_goal', 'five_goals', 'goal_getter'];
+          return goalRelatedBadges.includes(badge.id);
+        }
+        
+        return true;
+      });
+      
+      console.log(`Checking ${badgesToCheck.length} badges based on ${trigger} trigger`);
+      
       // Create a working copy of achievements
       const updatedAchievements = [...achievements];
       const pendingNotifications: Array<{type: string, message: string}> = [];
       
       // Process all badges in one go
-      for (const badge of availableBadges) {
+      for (const badge of badgesToCheck) {
         const qualifies = badge.condition(logs, stats);
         console.log(`Badge ${badge.id} (${badge.name}) qualifies: ${qualifies}`);
         
@@ -371,12 +400,14 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
             date: undefined
           };
           
-          // Add notification if not initial load
-          if (!isInitialLoad.current) {
+          // Add notification if not initial load and wasn't processed recently
+          if (!isInitialLoad.current && !processedBadges.current.has(`revoke_${badge.id}`)) {
             pendingNotifications.push({
               type: "error",
               message: `${badge.emoji} Achievement Lost: ${badge.name}`
             });
+            // Mark as processed
+            processedBadges.current.add(`revoke_${badge.id}`);
           }
           
           // Save to Supabase (this will delete it)
@@ -408,12 +439,14 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
             updatedAchievements.push(achievement);
           }
           
-          // Add notification if not initial load
-          if (!isInitialLoad.current) {
+          // Add notification if not initial load and wasn't processed recently
+          if (!isInitialLoad.current && !processedBadges.current.has(`earn_${badge.id}`)) {
             pendingNotifications.push({
               type: "success",
               message: `${badge.emoji} Achievement Unlocked: ${badge.name}`
             });
+            // Mark as processed
+            processedBadges.current.add(`earn_${badge.id}`);
           }
           
           // Save to Supabase
@@ -551,13 +584,13 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   const checkForAchievements = () => {
     // If already processing, don't start another process
     if (isProcessing.current) return;
-    processAchievements();
+    processAchievements('all');
   };
   
   const validateAchievements = () => {
     // If already processing, don't start another process
     if (isProcessing.current) return;
-    processAchievements();
+    processAchievements('all');
   };
 
   return (

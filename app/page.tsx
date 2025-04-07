@@ -36,6 +36,7 @@ export default function Home() {
   const [logValue, setLogValue] = useState("");
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState("");
+  const [dateSpecificGoal, setDateSpecificGoal] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -108,12 +109,41 @@ export default function Home() {
     }
   }, [carouselRef.current]);
 
-  // Update tempGoal when selectedDate or dateSpecificGoal changes
+  // Get today's date without time
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  
+  // Generate array of dates for the carousel (last 30 days + today)
+  const datesArray = [...Array(31)].map((_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30 + i);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+  
+  // Update dateSpecificGoal when selectedDate changes
   useEffect(() => {
-    const dateSpecificGoal = getGoalForDate(selectedDate);
-    setTempGoal(dateSpecificGoal.toString());
+    const goal = getGoalForDate(selectedDate);
+    setDateSpecificGoal(goal);
+    setTempGoal(goal.toString());
   }, [selectedDate, getGoalForDate]);
-
+  
+  // Listen for goals changed event
+  useEffect(() => {
+    const handleGoalsChanged = () => {
+      // Update the dateSpecificGoal for the currently selected date
+      const updatedGoal = getGoalForDate(selectedDate);
+      setDateSpecificGoal(updatedGoal);
+      setTempGoal(updatedGoal.toString());
+    };
+    
+    window.addEventListener('goalsChanged', handleGoalsChanged);
+    
+    return () => {
+      window.removeEventListener('goalsChanged', handleGoalsChanged);
+    };
+  }, [selectedDate, getGoalForDate]);
+  
   // Handle click outside to save goal
   useEffect(() => {
     if (isEditingGoal) {
@@ -127,71 +157,54 @@ export default function Home() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isEditingGoal, tempGoal]);
-
-  // If still loading or not authenticated, show nothing
-  if (loading || !user) {
-    return null;
-  }
-
-  // Determine today's date (with time stripped)
-  const today = new Date();
-  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  // Generate an array of past 30 days (including today)
-  const daysRange = 30;
-  const datesArray: Date[] = [];
-  for (let i = daysRange - 1; i >= 0; i--) {
-    const d = new Date(todayDate);
-    d.setDate(todayDate.getDate() - i);
-    datesArray.push(d);
-  }
-
-  // Handler for the wheel event
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+  
+  // Wheel event handler for carousel
+  const handleWheel = (e: React.WheelEvent) => {
     if (carouselRef.current) {
       e.preventDefault();
-      carouselRef.current.scrollBy({ left: e.deltaY, behavior: "smooth" });
+      carouselRef.current.scrollLeft += e.deltaY;
     }
   };
-
-  // Handler for the Today button
+  
+  // Function to scroll to today's date
   const goToToday = () => {
+    todayChipRef.current?.scrollIntoView({ behavior: "smooth", inline: "center" });
     setSelectedDate(todayDate);
-    if (carouselRef.current) {
-      carouselRef.current.scrollTo({
-        left: carouselRef.current.scrollWidth,
-        behavior: "smooth",
-      });
-    }
   };
-
-  // Get logs for a given day
-  const getLogsForDay = (day: Date) =>
-    logs.filter((log) => {
-      try {
-        const logDate = new Date(log.timestamp);
-        return (
-          logDate.getFullYear() === day.getFullYear() &&
-          logDate.getMonth() === day.getMonth() &&
-          logDate.getDate() === day.getDate()
-        );
-      } catch (e) {
-        console.error("Invalid timestamp format:", log.timestamp);
-        return false;
-      }
-    });
-
+  
+  // Helper function to get logs for a specific day
+  const getLogsForDay = (date: Date) => {
+    const startOfDay = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const endOfDay = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      23,
+      59,
+      59,
+      999
+    );
+    
+    return logs.filter(
+      (log) =>
+        new Date(log.timestamp) >= startOfDay &&
+        new Date(log.timestamp) <= endOfDay
+    );
+  };
+  
+  // Helper function to get total pushups for a day
   const getTotalForDay = (day: Date) =>
     getLogsForDay(day).reduce((sum, log) => sum + log.count, 0);
-
-  // Get the goal for the selected date
-  const dateSpecificGoal = getGoalForDate(selectedDate);
-
+  
   // Stats for the selected day
   const totalSelected = getTotalForDay(selectedDate);
-  const pushupsLeft = Math.max(dateSpecificGoal - totalSelected, 0);
-  const progress = dateSpecificGoal > 0 ? totalSelected / dateSpecificGoal : 0;
-
+  const pushupsLeft = Math.max(0, dateSpecificGoal - totalSelected);
+  const progress = dateSpecificGoal > 0 ? Math.min(100, (totalSelected / dateSpecificGoal) * 100) : 0;
+  
   // Calculate streak for a given date
   const calculateStreak = (date: Date): number => {
     let currentDate = new Date(date);
@@ -246,7 +259,8 @@ export default function Home() {
     const newGoal = parseInt(tempGoal);
     if (!isNaN(newGoal) && newGoal >= 0) {
       setGoal(newGoal, selectedDate);
-      // Direct check will be handled by the useEffect dependency on goal
+      setDateSpecificGoal(newGoal); // Update local state immediately for UI responsiveness
+      // The goalsChanged event will handle updating the goal in other components
     } else {
       setTempGoal(dateSpecificGoal.toString());
     }
@@ -262,6 +276,11 @@ export default function Home() {
       setTempGoal(dateSpecificGoal.toString());
     }
   };
+
+  // If still loading or not authenticated, show nothing
+  if (loading || !user) {
+    return null;
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
@@ -381,7 +400,9 @@ export default function Home() {
           <div className="mt-4 p-4 bg-green-100 border border-green-400 rounded flex items-center">
             <FaCheckCircle className="text-green-600 mr-2" />
             <span className="text-green-800 font-semibold">
-              Great job! You reached your daily goal!
+              {totalSelected > dateSpecificGoal 
+                ? `🌟 Superstar! You've exceeded your goal by ${totalSelected - dateSpecificGoal} ${totalSelected - dateSpecificGoal === 1 ? 'pushup' : 'pushups'}!`
+                : "Great job! You reached your daily goal!"}
             </span>
           </div>
         )}
