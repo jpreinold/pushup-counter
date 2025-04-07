@@ -384,18 +384,6 @@ export default function StatsPage() {
             ))}
           </div>
         </div>
-
-        <div className="mt-10 border-t pt-6">
-          <button
-            onClick={handleReset}
-            className="bg-red-500 text-white px-5 py-2.5 rounded-lg hover:bg-red-600 transition-colors shadow-sm hover:shadow flex items-center gap-2"
-          >
-            <span>🔄</span> Reset Prestige & Badges
-          </button>
-          <p className="text-sm text-gray-500 mt-2">
-            This will wipe your current prestige level and all unlocked badges.
-          </p>
-        </div>
       </div>
     );
   }

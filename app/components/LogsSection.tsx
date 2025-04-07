@@ -119,15 +119,6 @@ export default function LogsSection({
         )}
       </ul>
       
-      {contextLogs.length > 0 && (
-        <button
-          onClick={() => clearLogs()}
-          className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-        >
-          Clear All Logs
-        </button>
-      )}
-
       {/* Confirmation Modal */}
       {showClearConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/25"
