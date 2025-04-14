@@ -67,13 +67,13 @@ export default function LogsSection({
   const goalChange = getGoalChangeForDate(selectedDate);
   
   return (
-    <div className="border-t pt-6">
+    <div className="border-t dark:border-gray-700 pt-6">
       <div className="flex items-center mb-2">
-        <h4 className="text-lg font-semibold mr-2">Today's Logs</h4>
+        <h4 className="text-lg font-semibold mr-2 text-gray-900 dark:text-white">Today's Logs</h4>
         {getLogsForDay(selectedDate).length > 0 && (
           <button
             onClick={() => setShowClearConfirmation(true)}
-            className="text-red-500 hover:text-red-700 transition-colors"
+            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
             aria-label="Clear today's logs"
             title="Clear today's logs"
           >
@@ -83,13 +83,13 @@ export default function LogsSection({
       </div>
       
       {goalChange && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-md flex items-center">
-          <FaEdit className="text-blue-500 mr-2" />
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md flex items-center">
+          <FaEdit className="text-blue-500 dark:text-blue-400 mr-2" />
           <div>
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-gray-700 dark:text-gray-200">
               Goal set to <span className="font-semibold">{goalChange.value} {goalChange.value === 1 ? 'pushup' : 'pushups'}</span>
             </span>
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
               at {goalChange.changedAt ? format(new Date(goalChange.changedAt), 'h:mm a') : 'N/A'}
             </span>
           </div>
@@ -99,15 +99,15 @@ export default function LogsSection({
       <ul className="space-y-2">
         {getLogsForDay(selectedDate).length > 0 ? (
           getLogsForDay(selectedDate).map((log) => (
-            <li key={log.id} className="flex items-center text-gray-700 pl-2 pr-4">
-              <FaDumbbell className="mr-2 text-blue-500" />
+            <li key={log.id} className="flex items-center text-gray-700 dark:text-gray-200 pl-2 pr-4">
+              <FaDumbbell className="mr-2 text-blue-500 dark:text-blue-400" />
               <span className="flex-grow">{log.count} {log.count === 1 ? 'pushup' : 'pushups'}</span>
-              <span className="text-xs text-gray-500 mr-3">
+              <span className="text-xs text-gray-500 dark:text-gray-400 mr-3">
                 {formatTime(log.timestamp)}
               </span>
               <button 
                 onClick={() => handleDeleteLog(log.id)}
-                className="text-red-400 hover:text-red-600 transition-colors"
+                className="text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                 aria-label="Delete log"
               >
                 <FaTrash size={14} />
@@ -115,7 +115,7 @@ export default function LogsSection({
             </li>
           ))
         ) : (
-          <li className="text-gray-500 text-sm pl-2">No logs yet.</li>
+          <li className="text-gray-500 dark:text-gray-400 text-sm pl-2">No logs yet.</li>
         )}
       </ul>
       
@@ -128,15 +128,15 @@ export default function LogsSection({
             }
           }}
         >
-          <div className="bg-white rounded-lg p-6 max-w-md shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4">Confirm Deletion</h3>
-            <p className="mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Confirm Deletion</h3>
+            <p className="mb-6 text-gray-700 dark:text-gray-300">
               Are you sure you want to clear all logs for this date? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowClearConfirmation(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
               >
                 Cancel
               </button>
@@ -145,7 +145,7 @@ export default function LogsSection({
                   handleDeleteDateLogs(selectedDate);
                   setShowClearConfirmation(false);
                 }}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 transition"
               >
                 Delete
               </button>

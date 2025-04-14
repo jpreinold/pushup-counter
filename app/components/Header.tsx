@@ -56,8 +56,8 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white shadow-md">
-      <Link href="/" className="text-xl font-bold text-blue-600">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 shadow-md dark:shadow-gray-700">
+      <Link href="/" className="text-xl font-bold text-blue-600 dark:text-gray-300">
         Pushup Pal
       </Link>
 
@@ -65,25 +65,25 @@ export default function Header() {
         <div className="relative" ref={authMenuRef}>
           <button
             onClick={() => setIsAuthMenuOpen(!isAuthMenuOpen)}
-            className="text-gray-700 hover:text-blue-600 text-2xl transition-colors duration-200"
+            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-2xl transition-colors duration-200"
             aria-label={user ? "Account" : "Login"}
           >
             <HiUserCircle className="w-6 h-6" />
           </button>
 
           {isAuthMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-50 transform transition-all duration-300 ease-out overflow-hidden border-t-2 border-gray-200">
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 transform transition-all duration-300 ease-out overflow-hidden border-t-2 border-gray-200 dark:border-gray-700">
               <div className="py-2">
                 {user ? (
                   <>
-                    <div className="px-4 py-3 text-sm text-gray-500 border-b border-gray-100">
-                      Signed in as <span className="font-medium text-gray-700">{user.email}</span>
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      Signed in as <span className="font-medium text-gray-700 dark:text-gray-300">{user.email}</span>
                     </div>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                      className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                     >
-                      <HiLogout className="w-5 h-5 mr-3 text-blue-600" />
+                      <HiLogout className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                       <span className="font-medium">Sign out</span>
                     </button>
                   </>
@@ -92,9 +92,9 @@ export default function Header() {
                     <Link
                       href="/auth/login"
                       onClick={() => setIsAuthMenuOpen(false)}
-                      className="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                      className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                     >
-                      <HiLogin className="w-5 h-5 mr-3 text-blue-600" />
+                      <HiLogin className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                       <span className="font-medium">Sign in</span>
                     </Link>
                     <Link
@@ -115,7 +115,7 @@ export default function Header() {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-gray-700 hover:text-blue-600 text-2xl transition-colors duration-200"
+            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-2xl transition-colors duration-200"
             aria-label="Menu"
           >
             <div className="relative w-6 h-6">
@@ -133,34 +133,34 @@ export default function Header() {
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-50 transform transition-all duration-300 ease-out overflow-hidden border-t-2 border-gray-200">
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 transform transition-all duration-300 ease-out overflow-hidden border-t-2 border-gray-200 dark:border-gray-700">
               <div className="py-2">
                 <button
                   onClick={() => handleMenuItemClick('/')}
-                  className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                  className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
-                  <HiPlusCircle className="w-5 h-5 mr-3 text-blue-600" />
+                  <HiPlusCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                   <span className="font-medium">Log Pushups</span>
                 </button>
                 <button
                   onClick={() => handleMenuItemClick('/stats')}
-                  className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                  className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
-                  <HiChartBar className="w-5 h-5 mr-3 text-blue-600" />
+                  <HiChartBar className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                   <span className="font-medium">Stats</span>
                 </button>
                 <button
                   onClick={() => handleMenuItemClick('/prestige')}
-                  className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                  className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
-                  <HiStar className="w-5 h-5 mr-3 text-blue-600" />
+                  <HiStar className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                   <span className="font-medium">Prestige Roadmap</span>
                 </button>
                 <button
                   onClick={() => handleMenuItemClick('/goals')}
-                  className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                  className="flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
-                  <HiFlag className="w-5 h-5 mr-3 text-blue-600" />
+                  <HiFlag className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                   <span className="font-medium">Set Goal</span>
                 </button>
               </div>

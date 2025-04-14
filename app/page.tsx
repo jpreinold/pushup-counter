@@ -283,7 +283,7 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
+    <div className="max-w-4xl mx-auto p-6 overflow-x-hidden bg-white dark:bg-gray-900">
       <style jsx>{`
         /* Hide scrollbar for Webkit browsers */
         .scrollbar-hide::-webkit-scrollbar {
@@ -298,10 +298,10 @@ export default function Home() {
       {/* Date Carousel Section */}
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Select Date</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Select Date</h2>
           <button
             onClick={() => setShowCalendarModal(true)}
-            className="text-blue-500 hover:text-blue-600 transition-colors"
+            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             <FaCalendarAlt />
           </button>
@@ -333,7 +333,9 @@ export default function Home() {
                     transition 
                     transform 
                     hover:scale-102 
-                    ${isSelected ? "bg-blue-500 text-white border-blue-500" : "bg-gray-100 text-gray-700 border-gray-300"}
+                    ${isSelected 
+                      ? "bg-blue-500 text-white border-blue-500 dark:bg-blue-600 dark:border-blue-600" 
+                      : "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"}
                   `}
                 >
                   {formatDate(date)}
@@ -342,17 +344,15 @@ export default function Home() {
             })}
           </div>
           <div
-            className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10"
-            style={{ background: "linear-gradient(to right, white, transparent)" }}
+            className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-white to-transparent dark:from-gray-900 dark:to-transparent"
           ></div>
           <div
-            className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10"
-            style={{ background: "linear-gradient(to left, white, transparent)" }}
+            className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-l from-white to-transparent dark:from-gray-900 dark:to-transparent"
           ></div>
           {!todayVisible && (
             <button
               onClick={goToToday}
-              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-blue-500 text-white p-3 rounded-full shadow hover:shadow-lg transition z-20 text-xl"
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-blue-500 text-white p-3 rounded-full shadow hover:shadow-lg transition z-20 text-xl dark:bg-blue-600 dark:hover:bg-blue-700"
             >
               <FaArrowAltCircleRight />
             </button>
@@ -361,12 +361,12 @@ export default function Home() {
       </div>
 
       {/* Log Card for Selected Date */}
-      <div className="bg-white rounded-lg shadow p-6 space-y-4 relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4 relative">
         {/* Streak Counter Component */}
         <StreakCounter streak={currentStreak} />
 
         <div className="flex items-center">
-          <h3 className="text-xl font-semibold flex items-center">
+          <h3 className="text-xl font-semibold flex items-center text-gray-900 dark:text-white">
             {formatDate(selectedDate)}
             <span className="ml-2">-</span>
             {isEditingGoal ? (
@@ -376,13 +376,13 @@ export default function Home() {
                 value={tempGoal}
                 onChange={(e) => setTempGoal(e.target.value)}
                 onKeyDown={handleGoalKeyDown}
-                className="ml-2 w-16 text-blue-500 font-semibold text-xl border-b border-blue-300 focus:outline-none bg-transparent"
+                className="ml-2 w-16 text-blue-500 font-semibold text-xl border-b border-blue-300 focus:outline-none bg-transparent dark:text-blue-400 dark:border-blue-500"
                 min="0"
                 autoFocus
               />
             ) : (
               <span 
-                className="ml-2 text-blue-500 font-semibold cursor-pointer" 
+                className="ml-2 text-blue-500 font-semibold cursor-pointer dark:text-blue-400" 
                 onClick={() => setIsEditingGoal(true)}
               >
                 {dateSpecificGoal}
@@ -392,14 +392,14 @@ export default function Home() {
           </h3>
         </div>
         
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Pushups left for today: <span className="font-bold">{pushupsLeft}</span>
         </p>
         <ProgressBar progress={progress} />
         {pushupsLeft === 0 && totalSelected > 0 && (
-          <div className="mt-4 p-4 bg-green-100 border border-green-400 rounded flex items-center">
-            <FaCheckCircle className="text-green-600 mr-2" />
-            <span className="text-green-800 font-semibold">
+          <div className="mt-4 p-4 bg-green-100 border border-green-400 rounded flex items-center dark:bg-green-900 dark:border-green-700">
+            <FaCheckCircle className="text-green-600 mr-2 dark:text-green-400" />
+            <span className="text-green-800 font-semibold dark:text-green-200">
               {totalSelected > dateSpecificGoal 
                 ? `🌟 Superstar! You've exceeded your goal by ${totalSelected - dateSpecificGoal} ${totalSelected - dateSpecificGoal === 1 ? 'pushup' : 'pushups'}!`
                 : "Great job! You reached your daily goal!"}
@@ -414,12 +414,12 @@ export default function Home() {
             value={logValue}
             onChange={(e) => setLogValue(e.target.value)}
             placeholder="Enter pushups done"
-            className="border border-gray-300 rounded-l p-2 w-full focus:outline-none focus:border-blue-500 shadow-md"
+            className="border border-gray-300 rounded-l p-2 w-full focus:outline-none focus:border-blue-500 shadow-md dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
             min="1"
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white px-6 py-2 rounded-r border border-blue-500 hover:bg-blue-600 hover:border-blue-600 transition shadow-md"
+            className="bg-blue-500 text-white px-6 py-2 rounded-r border border-blue-500 hover:bg-blue-600 hover:border-blue-600 transition shadow-md dark:bg-blue-600 dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
           >
             Log
           </button>
