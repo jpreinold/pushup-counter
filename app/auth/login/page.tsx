@@ -48,19 +48,19 @@ export default function LoginPage() {
     <div className="container mx-auto px-4 pt-8">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome Back
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Sign in to continue tracking your pushups
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all hover:shadow-xl">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transform transition-all hover:shadow-xl">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Email
                 </label>
                 <input
@@ -69,14 +69,14 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Password
                 </label>
                 <input
@@ -85,7 +85,7 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -93,7 +93,7 @@ export default function LoginPage() {
                 <div className="text-right mt-1">
                   <Link
                     href="/auth/forgot-password"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
                     Forgot Password?
                   </Link>
@@ -102,7 +102,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
+              <div className="text-red-500 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-lg">
                 {error}
               </div>
             )}
@@ -115,9 +115,9 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </button>
 
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-gray-600 dark:text-gray-300">
               Don't have an account?{" "}
-              <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link href="/auth/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
                 Sign up
               </Link>
             </div>

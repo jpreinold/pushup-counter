@@ -74,26 +74,26 @@ export default function ResetPasswordPage() {
     <div className="container mx-auto px-4 pt-8">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Set New Password
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Please enter your new password below
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all hover:shadow-xl">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transform transition-all hover:shadow-xl">
           {success ? (
             <div className="text-center space-y-4">
-              <div className="text-green-600 text-lg font-medium">
+              <div className="text-green-600 dark:text-green-400 text-lg font-medium">
                 Password Updated Successfully
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Your password has been reset. You will be redirected to the login page shortly.
               </p>
               <Link
                 href="/auth/login"
-                className="inline-block text-blue-600 hover:text-blue-700 font-medium"
+                className="inline-block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 Go to login
               </Link>
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
             <form className="space-y-6" onSubmit={handlePasswordReset}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     New Password
                   </label>
                   <input
@@ -111,14 +111,14 @@ export default function ResetPasswordPage() {
                     type="password"
                     autoComplete="new-password"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder="Enter your new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Confirm New Password
                   </label>
                   <input
@@ -127,7 +127,7 @@ export default function ResetPasswordPage() {
                     type="password"
                     autoComplete="new-password"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder="Confirm your new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
               </div>
 
               {error && (
-                <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
+                <div className="text-red-500 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-lg">
                   {error}
                 </div>
               )}

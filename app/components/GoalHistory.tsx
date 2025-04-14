@@ -81,35 +81,35 @@ export default function GoalHistory() {
 
   if (!history || history.length === 0) {
     return (
-      <div className="bg-white p-6 rounded shadow max-w-md mx-auto mt-8">
-        <h2 className="text-2xl font-bold mb-4">Goal History</h2>
-        <p className="text-gray-500">No goal history available.</p>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-md mx-auto mt-8">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Goal History</h2>
+        <p className="text-gray-500 dark:text-gray-400">No goal history available.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded shadow max-w-md mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-4">Goal History</h2>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-md mx-auto mt-8">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Goal History</h2>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Date
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Goal
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Changed At
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {history.map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {format(new Date(item.startDate), 'MMM d, yyyy')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -120,20 +120,20 @@ export default function GoalHistory() {
                       value={editing.value}
                       onChange={(e) => setEditing({ ...editing, value: e.target.value })}
                       onKeyDown={handleKeyDown}
-                      className="w-16 text-blue-500 font-semibold text-sm border-b border-blue-300 focus:outline-none bg-transparent"
+                      className="w-16 text-blue-500 dark:text-blue-400 font-semibold text-sm border-b border-blue-300 dark:border-blue-500 focus:outline-none bg-transparent"
                       min="0"
                     />
                   ) : (
                     <span 
-                      className="text-blue-500 font-semibold cursor-pointer hover:border-b hover:border-blue-300" 
+                      className="text-blue-500 dark:text-blue-400 font-semibold cursor-pointer hover:border-b hover:border-blue-300 dark:hover:border-blue-500" 
                       onClick={() => handleStartEdit(index, item.value)}
                     >
                       {item.value}
                     </span>
                   )}
-                  <span className="text-gray-900 ml-1">pushups</span>
+                  <span className="text-gray-900 dark:text-gray-300 ml-1">pushups</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {item.changedAt ? format(new Date(item.changedAt), 'h:mm a') : 'N/A'}
                 </td>
               </tr>
