@@ -179,7 +179,13 @@ export default function StatsCalendarModal({ onClose, onSelectDate, pushupData =
     if (startDate) {
       // If only start date is selected, use it as both start and end
       const end = endDate || startDate;
-      onSelectDate(startDate, end);
+      
+      // Ensure dates are in chronological order
+      const [earlierDate, laterDate] = startDate.getTime() < end.getTime() 
+        ? [startDate, end] 
+        : [end, startDate];
+      
+      onSelectDate(earlierDate, laterDate);
       onClose();
     }
   };

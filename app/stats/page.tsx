@@ -221,7 +221,12 @@ export default function StatsPage() {
 
   const filteredLogs = logs.filter((log) => {
     const logDate = new Date(log.timestamp);
-    return logDate >= startDate && logDate <= endDate;
+    // Set time to start of day for startDate and end of day for endDate
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    return logDate >= start && logDate <= end;
   });
 
   const prepareChartData = () => {
@@ -321,12 +326,16 @@ export default function StatsPage() {
 
       // Add all dates in the range, even if they have 0 pushups
       const sortedDates = [];
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.toISOString().split("T")[0];
+      const currentDate = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      while (currentDate <= endDateObj) {
+        const dateKey = currentDate.toISOString().split("T")[0];
         sortedDates.push(dateKey);
         if (!grouped[dateKey]) {
           grouped[dateKey] = 0;
         }
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       const options = getChartOptions(barChartOptions);
